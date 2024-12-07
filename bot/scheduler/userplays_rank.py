@@ -73,7 +73,7 @@ class Uplaysinfo:
                         leaderboard_data.append([member_info["tg"], new_iv, f'{medal}{emby_name}', points])
 
                     formatted_time = await convert_s(int(play_record[1]))
-                    page_data += f'{medal}**第{cn2an.an2cn(rank)}名** | [{emby_name}](https://www.google.com/search?q={tg})\n' \
+                    page_data += f'{medal}**第{cn2an.an2cn(rank)}名** | [{emby_name}](tg://user?id={tg})\n' \
                                  f'  观影时长 | {formatted_time}\n'
 
                 page_data += f'\n#UPlaysRank {datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d")}'
@@ -139,13 +139,13 @@ class Uplaysinfo:
                 try:
                     ac_date = convert_to_beijing_time(user["LastActivityDate"])
                     # print(e.name, ac_date, now)
-                    if ac_date + timedelta(days=21) < now:
+                    if ac_date + timedelta(days=14) < now:
                         if await emby.emby_change_policy(id=user["Id"], method=True):
                             sql_update_emby(Emby.embyid == user["Id"], lv='c')
-                            msg += f"**🔋活跃检测** - [{user['Name']}](tg://user?id={e.tg})\n#id{e.tg} 21天未活跃，禁用\n\n"
-                            LOGGER.info(f"【活跃检测】- 禁用账户 {user['Name']} #id{e.tg}：21天未活跃")
+                            msg += f"**🔋活跃检测** - [{user['Name']}](tg://user?id={e.tg})\n#id{e.tg} 14天未活跃，禁用\n\n"
+                            LOGGER.info(f"【活跃检测】- 禁用账户 {user['Name']} #id{e.tg}：14天未活跃")
                         else:
-                            msg += f"**🎂活跃检测** - [{user['Name']}](tg://user?id={e.tg})\n21天未活跃，禁用失败啦！检查emby连通性\n\n"
+                            msg += f"**🎂活跃检测** - [{user['Name']}](tg://user?id={e.tg})\n14天未活跃，禁用失败啦！检查emby连通性\n\n"
                             LOGGER.info(f"【活跃检测】- 禁用账户 {user['Name']} #id{e.tg}：禁用失败啦！检查emby连通性")
                 except KeyError:
                     if await emby.emby_change_policy(id=user["Id"], method=True):

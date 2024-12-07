@@ -27,8 +27,57 @@ from bot.sql_helper.sql_emby import sql_get_emby, sql_update_emby, Emby, sql_del
 from bot.sql_helper.sql_emby2 import sql_get_emby2, sql_delete_emby2
 
 
+async def generate_arithmetic_captcha():
+    """Generate a simple arithmetic problem with numbers between 1-999"""
+    operator = random.choice(['+', '-', '*', '/'])
+
+    if operator == '/':
+        # 为除法生成有整除结果的数字
+        answer = random.randint(1, 999)  # 商的范围限制在1-100，使结果更合理
+        num2 = random.randint(2, 999)  # 除数限制在2-20，避免太大的除数
+        num1 = answer * num2  # 计算被除数，确保能整除
+    elif operator == '*':
+        # 乘法运算限制一个数字较小，避免结果过大
+        num1 = random.randint(2, 999)  # 第一个数小一些
+        num2 = random.randint(1, 999)  # 第二个数可以大一些
+        answer = num1 * num2
+    else:  # + 或 -
+        num1 = random.randint(1, 999)
+        num2 = random.randint(1, 999)
+        if operator == '+':
+            answer = num1 + num2
+        else:  # operator == '-'
+            # 确保减法结果为正数
+            if num1 < num2:
+                num1, num2 = num2, num1  # 交换，确保结果为正
+            answer = num1 - num2
+
+    question = f"{num1} {operator} {num2} = ?"
+    return question, str(answer)
+
 # 创号函数
 async def create_user(_, call, us, stats):
+    # First, generate and ask the arithmetic captcha
+    question, correct_answer = await generate_arithmetic_captcha()
+    captcha_msg = await ask_return(call,
+                                   text=f'🧮 **请先完成验证计算：**\n\n`{question}`\n\n'
+                                        f'请在120秒内输入答案\n\n'
+                                        f'注意：\n- 所有计算结果均为整数\n- 减法结果保证为正数\n- 除法请输入整除后的结果'
+                                        f'退出请点 /cancel',
+                                   timer=120,
+                                   button=close_it_ikb)
+
+    if not captcha_msg:
+        return
+    elif captcha_msg.text == '/cancel':
+        return await asyncio.gather(captcha_msg.delete(),
+                                    bot.delete_messages(captcha_msg.from_user.id, captcha_msg.id - 1))
+
+    # Verify captcha answer
+    if captcha_msg.text != correct_answer:
+        await captcha_msg.reply('❌ **验证失败！**\n\n计算错误，请重新注册。')
+        return
+
     msg = await ask_return(call,
                            text='🤖**注意：您已进入注册状态:\n\n• 请在2min内输入 `[用户名][空格][安全码]`\n• 举个例子🌰：`苏苏 1234`**\n\n• 用户名中不限制中/英文/emoji，🚫**特殊字符**'
                                 '\n• 安全码为敏感操作时附加验证，请填入最熟悉的数字4~6位；退出请点 /cancel', timer=120,
@@ -69,7 +118,7 @@ async def create_user(_, call, us, stats):
             if schedall.check_ex:
                 ex = ex.strftime("%Y-%m-%d %H:%M:%S")
             elif schedall.low_activity:
-                ex = '__若21天无观看将封禁__'
+                ex = '__若14天无观看将封禁__'
             else:
                 ex = '__无需保号，放心食用__'
             await editMessage(send,

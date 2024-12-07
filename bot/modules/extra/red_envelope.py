@@ -294,7 +294,7 @@ async def users_iv_rank():
             for q in result:
                 name = str(members_dict.get(q.tg, q.tg))[:12]
                 medal = m[e - 1] if e < 4 else m[3]
-                text += f'{medal}**第{cn2an.an2cn(e)}名** | [{name}](google.com?q={q.tg}) の **{q.iv} {sakura_b}**\n'
+                text += f'{medal}**第{cn2an.an2cn(e)}名** | [{name}](tg://user?id={q.tg}) の **{q.iv} {sakura_b}**\n'
                 e += 1
             a.append(text)
             b += 1

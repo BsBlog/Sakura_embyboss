@@ -159,7 +159,7 @@ async def check_expired():
     for e in rseired:
         if await emby.emby_change_policy(id=e.embyid, method=True):
             if sql_update_emby2(Emby2.embyid == e.embyid, expired=1):
-                text = f"【封禁检测】- 到期封印非TG账户 [{e.name}](google.com?q={e.embyid}) Done！"
+                text = f"【封禁检测】- 到期封印非TG账户 [{e.name}](tg://user?id={e.embyid}) Done！"
                 LOGGER.info(text)
             else:
                 text = f'【封禁检测】- 到期封印非TG账户：`{e.name}` 数据库更改失败'
