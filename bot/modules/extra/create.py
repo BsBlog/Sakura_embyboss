@@ -112,7 +112,7 @@ async def uun_info(_, msg, name = None):
         a = ''
 
     if e.name and schedall.low_activity and not schedall.check_ex:
-        ex = '__若21天无观看将封禁__'
+        ex = '__若14天无观看将封禁__'
 
     elif e.name and not schedall.low_activity and not schedall.check_ex:
         ex = ' __无需保号，放心食用__'
@@ -153,7 +153,7 @@ async def user_cha_ip(_, msg, name = None):
         text = '**🌏 以下为该用户播放过的设备&ip**\n\n'
         for r in result:
             device, client, ip = r
-            text += f'{device} | {client} | [{ip}](https://whois.pconline.com.cn/ipJson.jsp?ip={ip}&json=true) \n'
+            text += f'{device} | {client} | [{ip}](https://ping0.cc/ip/{ip}) \n'
         # 以\n分割文本，每20条发送一个消息
         messages = text.split('\n')
         # 每20条消息组成一组
