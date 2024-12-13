@@ -162,9 +162,11 @@ async def update_edit_message(call, game, status=None):
         user = sql_get_emby(game['user_id'])
         target_user = sql_get_emby(game['target_user_id'])
         if target_user.iv < game['rob_gold']:
-            rob_gold = random.randint(25, target_user.iv)
+            # rob_gold = random.randint(25, target_user.iv)
+            rob_gold = target_user.iv
         else:
-            rob_gold = random.randint(50, game['rob_gold'])
+            # rob_gold = random.randint(50, game['rob_gold'])
+            rob_gold = game['rob_gold']
         change_emby_amount(game['user_id'], user.iv + rob_gold)
         change_emby_amount(game['target_user_id'], target_user.iv - rob_gold)
 
@@ -187,14 +189,23 @@ async def update_edit_message(call, game, status=None):
         target_user = sql_get_emby(game['target_user_id'])
         if target_score < user_score:
             update_text += f"· 🎫 最终结果 | {user_with_link} 获胜！\n"
-            change_emby_amount(game['user_id'], user.iv + game['rob_gold'])
-            change_emby_amount(game['target_user_id'], target_user.iv - game['rob_gold'])
+            if target_user.iv >= game['rob_gold']:
+                change_emby_amount(game['user_id'], user.iv + game['rob_gold'])
+                change_emby_amount(game['target_user_id'], target_user.iv - game['rob_gold'])
+            else:
+                partial_gold = target_user.iv
+                change_emby_amount(game['user_id'], user.iv + partial_gold)
+                change_emby_amount(game['target_user_id'], 0)
             await editMessage(game['original_message'], update_text, buttons)
             not_answer = f"{target_with_link} 没有反应，{user_with_link} 顺利抢走 **{game['rob_gold']}** Coin✌️！\n"
             no_answer_msg = await bot.send_message(call.chat.id, not_answer, reply_to_message_id=call.id)
         else:
             update_text += f"· 🎫 最终结果 | {target_with_link} 获胜！\n"
-            compensation = random.randint(1, 50) if user.iv > 50 else random.randint(1, user.iv)
+            if user.iv < game['rob_gold']:
+                compensation = user.iv
+            else:
+                compensation = game['rob_gold']
+            # compensation = random.randint(1, 50) if user.iv > 50 else random.randint(1, user.iv)
             change_emby_amount(game['user_id'], user.iv - compensation)
             change_emby_amount(game['target_user_id'], target_user.iv + compensation)
             await editMessage(game['original_message'], update_text, buttons)
