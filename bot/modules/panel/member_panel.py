@@ -9,6 +9,7 @@ import asyncio
 import datetime
 import math
 import random
+import sys
 from datetime import timedelta, datetime
 from bot.schemas import ExDate, Yulv
 from bot import bot, LOGGER, _open, emby_line, sakura_b, ranks, group, extra_emby_libs, config, bot_name, schedall
@@ -28,22 +29,23 @@ from bot.sql_helper.sql_emby2 import sql_get_emby2, sql_delete_emby2
 
 
 async def generate_arithmetic_captcha():
-    """Generate a simple arithmetic problem with numbers between 1-999"""
     operator = random.choice(['+', '-', '*', '/'])
+    max = sys.maxsize
+    min = -sys.maxsize - 1
 
     if operator == '/':
         # 为除法生成有整除结果的数字
-        answer = random.randint(1, 999)  # 商的范围限制在1-100，使结果更合理
-        num2 = random.randint(2, 999)  # 除数限制在2-20，避免太大的除数
+        answer = random.randint(min, max)  # 商的范围限制在1-100，使结果更合理
+        num2 = random.randint(min, max)  # 除数限制在2-20，避免太大的除数
         num1 = answer * num2  # 计算被除数，确保能整除
     elif operator == '*':
         # 乘法运算限制一个数字较小，避免结果过大
-        num1 = random.randint(2, 999)  # 第一个数小一些
-        num2 = random.randint(1, 999)  # 第二个数可以大一些
+        num1 = random.randint(min, max)  # 第一个数小一些
+        num2 = random.randint(min, max)  # 第二个数可以大一些
         answer = num1 * num2
     else:  # + 或 -
-        num1 = random.randint(1, 999)
-        num2 = random.randint(1, 999)
+        num1 = random.randint(min, max)
+        num2 = random.randint(min, max)
         if operator == '+':
             answer = num1 + num2
         else:  # operator == '-'
@@ -69,6 +71,7 @@ async def create_user(_, call, us, stats):
 
     if not captcha_msg:
         return
+
     elif captcha_msg.text == '/cancel':
         return await asyncio.gather(captcha_msg.delete(),
                                     bot.delete_messages(captcha_msg.from_user.id, captcha_msg.id - 1))
