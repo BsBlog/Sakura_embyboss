@@ -10,7 +10,7 @@ from bot import bot, prefixes
 from bot.func_helper.msg_utils import deleteMessage, editMessage
 from bot.sql_helper.sql_emby import sql_get_emby, sql_update_emby, Emby
 
-COMMISSION_FEE = 50     # 打劫佣金
+# COMMISSION_FEE = 50     # 打劫佣金
 MAX_COMMISSION_FEE = sys.maxsize  # 最大打劫钱
 ROB_TIME = 10  # 打劫持续时间
 rob_games = {}
@@ -44,6 +44,8 @@ async def countdown(call, rob_message):
 
 
 async def start_rob(message, user, target_user):
+    global COMMISSION_FEE
+    COMMISSION_FEE = user.iv
     # Send the narrative message first
     narrative_msg = await bot.send_message(
         message.chat.id,
