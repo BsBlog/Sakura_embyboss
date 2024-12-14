@@ -31,8 +31,8 @@ from bot.sql_helper.sql_emby2 import sql_get_emby2, sql_delete_emby2
 
 async def generate_arithmetic_captcha():
     operator = random.choice(['+', '-', '*', '/'])
-    max = 9999
-    min = -9999
+    max = 100
+    min = -100
 
     if operator == '/':
         # 为除法生成有整除结果的数字
