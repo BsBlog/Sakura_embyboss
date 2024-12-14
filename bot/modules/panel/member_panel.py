@@ -10,6 +10,7 @@ import datetime
 import math
 import random
 import sys
+import time
 from datetime import timedelta, datetime
 from bot.schemas import ExDate, Yulv
 from bot import bot, LOGGER, _open, emby_line, sakura_b, ranks, group, extra_emby_libs, config, bot_name, schedall
@@ -24,14 +25,14 @@ from bot.func_helper.msg_utils import callAnswer, editMessage, callListen, sendM
 from bot.modules.commands import p_start
 from bot.modules.commands.exchange import rgs_code
 from bot.sql_helper.sql_code import sql_count_c_code
-from bot.sql_helper.sql_emby import sql_get_emby, sql_update_emby, Emby, sql_delete_emby
+from bot.sql_helper.sql_emby import sql_get_emby, sql_update_emby, Emby, sql_delete_emby, sql_edit_bot
 from bot.sql_helper.sql_emby2 import sql_get_emby2, sql_delete_emby2
 
 
 async def generate_arithmetic_captcha():
     operator = random.choice(['+', '-', '*', '/'])
-    max = sys.maxsize
-    min = -sys.maxsize - 1
+    max = 9999
+    min = -9999
 
     if operator == '/':
         # 为除法生成有整除结果的数字
@@ -61,6 +62,10 @@ async def generate_arithmetic_captcha():
 async def create_user(_, call, us, stats):
     # First, generate and ask the arithmetic captcha
     question, correct_answer = await generate_arithmetic_captcha()
+
+    # Record start time for verification
+    start_time = time.time()
+
     captcha_msg = await ask_return(call,
                                    text=f'🧮 **请先完成验证计算：**\n\n`{question}`\n\n'
                                         f'请在120秒内输入答案\n\n'
@@ -76,10 +81,22 @@ async def create_user(_, call, us, stats):
         return await asyncio.gather(captcha_msg.delete(),
                                     bot.delete_messages(captcha_msg.from_user.id, captcha_msg.id - 1))
 
+    # Calculate verification time
+    verification_time = time.time() - start_time
+
     # Verify captcha answer
     if captcha_msg.text != correct_answer:
         await captcha_msg.reply('❌ **验证失败！**\n\n计算错误，请重新注册。')
         return
+
+    # Check if response was too fast (potential bot)
+    if verification_time < 5:
+        tg = call.from_user.id
+        if not sql_edit_bot(tg, True):
+            await captcha_msg.reply('🍰 **数据库处理出错，请联系管理人员！**')
+            LOGGER.error(f"数据库处理出错")
+            return
+        await captcha_msg.reply('❓ **速度过快！**\n\n回答速度过快，被判定为自动程序，你可以继续注册流程，但是会被限制。')
 
     msg = await ask_return(call,
                            text='🤖**注意：您已进入注册状态:\n\n• 请在2min内输入 `[用户名][空格][安全码]`\n• 举个例子🌰：`苏苏 1234`**\n\n• 用户名中不限制中/英文/emoji，🚫**特殊字符**'

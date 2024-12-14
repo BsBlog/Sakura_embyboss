@@ -2,7 +2,7 @@
 基本的sql操作
 """
 from bot.sql_helper import Base, Session, engine
-from sqlalchemy import Column, BigInteger, String, DateTime, Integer, case
+from sqlalchemy import Column, BigInteger, String, DateTime, Integer, Boolean, case
 from sqlalchemy import func
 from sqlalchemy import or_
 from bot import LOGGER
@@ -25,6 +25,7 @@ class Emby(Base):
     us = Column(Integer, default=0)
     iv = Column(Integer, default=0)
     ch = Column(DateTime, nullable=True)
+    bot = Column(Boolean, nullable=True)
 
 
 Emby.__table__.create(bind=engine, checkfirst=True)
@@ -196,3 +197,19 @@ def sql_count_emby():
             return None, None, None
         else:
             return count.tg_count, count.embyid_count, count.lv_a_count
+
+def sql_edit_bot(tg: int, status: bool):
+    with Session() as session:
+        try:
+            emby = session.query(Emby).filter(Emby.tg == tg).first()
+            if emby is None:
+                return False
+
+            emby.bot = True if status else None
+
+            session.commit()
+            return True
+        except Exception as e:
+            LOGGER.error(f"Error updating bot for tg {tg}: {e}")
+            session.rollback()
+            return False
