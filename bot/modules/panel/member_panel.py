@@ -60,43 +60,43 @@ async def generate_arithmetic_captcha():
 
 # 创号函数
 async def create_user(_, call, us, stats):
-    # First, generate and ask the arithmetic captcha
-    question, correct_answer = await generate_arithmetic_captcha()
+    # # First, generate and ask the arithmetic captcha
+    # question, correct_answer = await generate_arithmetic_captcha()
 
-    # Record start time for verification
-    start_time = time.time()
+    # # Record start time for verification
+    # start_time = time.time()
 
-    captcha_msg = await ask_return(call,
-                                   text=f'🧮 **请先完成验证计算：**\n\n`{question}`\n\n'
-                                        f'请在120秒内输入答案\n\n'
-                                        f'注意：\n- 所有计算结果均为整数\n- 除法请输入整除后的结果\n'
-                                        f'退出请点 /cancel',
-                                   timer=120,
-                                   button=close_it_ikb)
+    # captcha_msg = await ask_return(call,
+    #                                text=f'🧮 **请先完成验证计算：**\n\n`{question}`\n\n'
+    #                                     f'请在120秒内输入答案\n\n'
+    #                                     f'注意：\n- 所有计算结果均为整数\n- 除法请输入整除后的结果\n'
+    #                                     f'退出请点 /cancel',
+    #                                timer=120,
+    #                                button=close_it_ikb)
 
-    if not captcha_msg:
-        return
+    # if not captcha_msg:
+    #     return
 
-    elif captcha_msg.text == '/cancel':
-        return await asyncio.gather(captcha_msg.delete(),
-                                    bot.delete_messages(captcha_msg.from_user.id, captcha_msg.id - 1))
+    # elif captcha_msg.text == '/cancel':
+    #     return await asyncio.gather(captcha_msg.delete(),
+    #                                 bot.delete_messages(captcha_msg.from_user.id, captcha_msg.id - 1))
 
-    # Calculate verification time
-    verification_time = time.time() - start_time
+    # # Calculate verification time
+    # verification_time = time.time() - start_time
 
-    # Verify captcha answer
-    if captcha_msg.text != correct_answer:
-        await captcha_msg.reply('❌ **验证失败！**\n\n计算错误，请重新注册。')
-        return
+    # # Verify captcha answer
+    # if captcha_msg.text != correct_answer:
+    #     await captcha_msg.reply('❌ **验证失败！**\n\n计算错误，请重新注册。')
+    #     return
 
-    # Check if response was too fast (potential bot)
-    if verification_time < 5:
-        tg = call.from_user.id
-        if not sql_edit_bot(tg, True):
-            await captcha_msg.reply('🍰 **数据库处理出错，请联系管理人员！**')
-            LOGGER.error(f"数据库处理出错")
-            return
-        await captcha_msg.reply('❓ **速度过快！**\n\n回答速度过快，被判定为自动程序，你可以继续注册流程，但是会被限制。')
+    # # Check if response was too fast (potential bot)
+    # if verification_time < 5:
+    #     tg = call.from_user.id
+    #     if not sql_edit_bot(tg, True):
+    #         await captcha_msg.reply('🍰 **数据库处理出错，请联系管理人员！**')
+    #         LOGGER.error(f"数据库处理出错")
+    #         return
+    #     await captcha_msg.reply('❓ **速度过快！**\n\n回答速度过快，被判定为自动程序，你可以继续注册流程，但是会被限制。')
 
     msg = await ask_return(call,
                            text='🤖**注意：您已进入注册状态:\n\n• 请在2min内输入 `[用户名][空格][安全码]`\n• 举个例子🌰：`苏苏 1234`**\n\n• 用户名中不限制中/英文/emoji，🚫**特殊字符**'
