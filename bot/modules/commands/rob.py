@@ -11,7 +11,7 @@ from bot.func_helper.msg_utils import deleteMessage, editMessage
 from bot.sql_helper.sql_emby import sql_get_emby, sql_update_emby, Emby
 
 # COMMISSION_FEE = 50     # 打劫佣金
-MAX_COMMISSION_FEE = sys.maxsize  # 最大打劫钱
+# MAX_COMMISSION_FEE = sys.maxsize  # 最大打劫钱
 ROB_TIME = 10  # 打劫持续时间
 rob_games = {}
 # 添加全局锁字典
@@ -44,8 +44,6 @@ async def countdown(call, rob_message):
 
 
 async def start_rob(message, user, target_user):
-    global COMMISSION_FEE
-    COMMISSION_FEE = user.iv
     # Send the narrative message first
     narrative_msg = await bot.send_message(
         message.chat.id,
@@ -61,7 +59,8 @@ async def start_rob(message, user, target_user):
 
     global rob_games
 
-    rob_amount = random.randint(COMMISSION_FEE, MAX_COMMISSION_FEE)
+    rob_amount = target_user.iv
+    # rob_amount = random.randint(COMMISSION_FEE, MAX_COMMISSION_FEE)
     user_with_link = await get_fullname_with_link(user.tg)
     target_with_link = await get_fullname_with_link(target_user.tg)
     keyboard_rob = InlineKeyboardMarkup([
@@ -451,6 +450,8 @@ async def handle_rob_callback(client, call):
 @bot.on_message(filters.command('rob', prefixes=prefixes) & filters.group)
 async def rob_user(_, msg):
     user = sql_get_emby(msg.from_user.id)
+    global COMMISSION_FEE
+    COMMISSION_FEE = user.iv
 
     if not msg.reply_to_message:
         if len(msg.command) != 2:
