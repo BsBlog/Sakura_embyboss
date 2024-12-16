@@ -59,7 +59,7 @@ async def start_rob(message, user, target_user):
 
     global rob_games
 
-    rob_amount = target_user.iv
+    rob_amount = user.iv + target_user.iv
     # rob_amount = random.randint(COMMISSION_FEE, MAX_COMMISSION_FEE)
     user_with_link = await get_fullname_with_link(user.tg)
     target_with_link = await get_fullname_with_link(target_user.tg)
