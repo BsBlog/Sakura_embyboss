@@ -20,7 +20,7 @@ from bot.func_helper.filters import user_in_group_on_filter
 from bot.func_helper.utils import members_info, tem_adduser, cr_link_one, judge_admins, tem_deluser, pwd_create
 from bot.func_helper.fix_bottons import members_ikb, back_members_ikb, re_create_ikb, del_me_ikb, re_delme_ikb, \
     re_reset_ikb, re_changetg_ikb, emby_block_ikb, user_emby_block_ikb, user_emby_unblock_ikb, re_exchange_b_ikb, \
-    store_ikb, re_bindtg_ikb, close_it_ikb, store_query_page, re_born_ikb, send_changetg_ikb
+    store_ikb, re_bindtg_ikb, close_it_ikb, store_query_page, re_born_ikb, send_changetg_ikb, favorites_page_ikb
 from bot.func_helper.msg_utils import callAnswer, editMessage, callListen, sendMessage, ask_return, deleteMessage
 from bot.modules.commands import p_start
 from bot.modules.commands.exchange import rgs_code
@@ -750,3 +750,42 @@ async def do_store_query(_, call):
         number = 1
     await callAnswer(call, '📜 正在翻页')
     await editMessage(call, text=a[number - 1], buttons=await store_query_page(b, number))
+@bot.on_callback_query(filters.regex('^my_favorites|^page_my_favorites:'))
+async def my_favorite(_, call):
+    # 获取页码
+    if call.data == 'my_favorites':
+        page = 1
+        await callAnswer(call, '🔍 我的收藏')
+    else:
+        page = int(call.data.split(':')[1])
+        await callAnswer(call, f'🔍 打开第{page}页')
+    get_emby = sql_get_emby(tg=call.from_user.id)
+    if get_emby is None:
+        return await callAnswer(call, '您还没有Emby账户', True)
+    limit = 20
+    start_index = (page - 1) * limit
+    favorites = await emby.get_favorite_items(get_emby.embyid, start_index=start_index, limit=limit)
+    text = "**我的收藏**\n\n"
+    for item in favorites.get("Items", []):
+        item_id = item.get("Id")
+        if not item_id:
+            continue
+        # 获取项目名称
+        item_name = item.get("Name", "")
+        item_type = item.get('Type', '未知')
+        if item_type == 'Movie':
+            item_type = '电影'
+        elif item_type == 'Series':
+            item_type = '剧集'
+        elif item_type == 'Episode':
+            item_type = '剧集'
+        elif item_type == 'Person':
+            item_type = '人物'
+        elif item_type == 'Photo':
+            item_type = '图片'
+        text += f"{item_type}：{item_name}\n"
+
+    total_favorites = favorites.get("TotalRecordCount", 0)
+    total_pages = math.ceil(total_favorites / limit)
+    keyboard = await favorites_page_ikb(total_pages, page)
+    await editMessage(call, text, buttons=keyboard)
