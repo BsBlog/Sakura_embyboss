@@ -314,7 +314,8 @@ def config_preparation() -> InlineKeyboardMarkup:
     fuxx_pt = '✅' if fuxx_pitao else '❎'
     keyboard = ikb(
         [[('📄 导出日志', 'log_out'), ('📌 设置探针', 'set_tz')],
-         [('💠 emby线路', 'set_line'), ('🎬 显/隐指定库', 'set_block')],
+         [('💠 emby线路', 'set_line'), ('💠 emby特殊线路', 'set_special_line')],
+         [('🎬 显/隐指定库', 'set_block')],
          [(f'{leave_ban} 退群封禁', 'leave_ban'), (f'{uplays} 观影奖励结算', 'set_uplays')],
          [(f'{auto_up} 自动更新bot', 'set_update'), (f'{mp_set} Moviepilot求片', 'set_mp')],
          [(f'设置赠送资格天数({kk_gift_days}天)', 'set_kk_gift_days'),

@@ -143,6 +143,7 @@ class Config(BaseModel):
     emby_url: str
     emby_block: Optional[List[str]] = []
     emby_line: str
+    special_emby_line: str
     extra_emby_libs: Optional[List[str]] = []
     db_host: str
     db_user: str
