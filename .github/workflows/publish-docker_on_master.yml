@@ -6,16 +6,8 @@ on:
 
   workflow_dispatch:
     inputs:
-      linux_386:
-        description: 'Build for linux/386'
-        type: boolean
-        default: true
       linux_amd64:
         description: 'Build for linux/amd64'
-        type: boolean
-        default: true
-      linux_arm_v7:
-        description: 'Build for linux/arm/v7'
         type: boolean
         default: true
       linux_arm64_v8:
@@ -45,18 +37,16 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             PLATFORMS=""
-            if [ "${{ inputs.linux_386 }}" = "true" ]; then PLATFORMS+="linux/386,"; fi
             if [ "${{ inputs.linux_amd64 }}" = "true" ]; then PLATFORMS+="linux/amd64,"; fi
-            if [ "${{ inputs.linux_arm_v7 }}" = "true" ]; then PLATFORMS+="linux/arm/v7,"; fi
             if [ "${{ inputs.linux_arm64_v8 }}" = "true" ]; then PLATFORMS+="linux/arm64/v8,"; fi
             PLATFORMS=$(echo $PLATFORMS | sed 's/,$//')
           else
-            PLATFORMS="linux/386,linux/amd64,linux/arm/v7,linux/arm64/v8"
+            PLATFORMS="linux/amd64,linux/arm64/v8"
           fi
           
           if [ -z "$PLATFORMS" ]; then
             echo "No platforms selected, using default"
-            PLATFORMS="linux/amd64"
+            PLATFORMS="linux/amd64,linux/arm64/v8"
           fi
           
           echo "Selected platforms: $PLATFORMS"
