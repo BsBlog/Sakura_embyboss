@@ -4,42 +4,93 @@ on:
   push:
     branches: ['master']
 
+  workflow_dispatch:
+    inputs:
+      linux_386:
+        description: 'Build for linux/386'
+        type: boolean
+        default: true
+      linux_amd64:
+        description: 'Build for linux/amd64'
+        type: boolean
+        default: true
+      linux_arm_v7:
+        description: 'Build for linux/arm/v7'
+        type: boolean
+        default: true
+      linux_arm64_v8:
+        description: 'Build for linux/arm64/v8'
+        type: boolean
+        default: true
+
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}  # This will use the default repository name
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   push_to_registries:
-    name: Push docker image to docker hub
+    name: Publish Latest Docker image
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
+    permissions: write-all
     steps:
-      -
-        name: Checkout
+
+      - name: Free Disk-Space
+        run: df -h && sudo apt-get clean && docker system prune -a -f && sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc && df -h
+
+      - name: Checkout
         uses: actions/checkout@main
-      -
-        name: Set up QEMU
+
+      - name: Setup platforms
+        id: set-platforms
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PLATFORMS=""
+            if [ "${{ inputs.linux_386 }}" = "true" ]; then PLATFORMS+="linux/386,"; fi
+            if [ "${{ inputs.linux_amd64 }}" = "true" ]; then PLATFORMS+="linux/amd64,"; fi
+            if [ "${{ inputs.linux_arm_v7 }}" = "true" ]; then PLATFORMS+="linux/arm/v7,"; fi
+            if [ "${{ inputs.linux_arm64_v8 }}" = "true" ]; then PLATFORMS+="linux/arm64/v8,"; fi
+            PLATFORMS=$(echo $PLATFORMS | sed 's/,$//')
+          else
+            PLATFORMS="linux/386,linux/amd64,linux/arm/v7,linux/arm64/v8"
+          fi
+          
+          if [ -z "$PLATFORMS" ]; then
+            echo "No platforms selected, using default"
+            PLATFORMS="linux/amd64"
+          fi
+          
+          echo "Selected platforms: $PLATFORMS"
+          echo "PLATFORMS=$PLATFORMS" >> $GITHUB_ENV
+
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@master
-      -
-        name: Set up Docker Buildx
+
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@master
-      -
-        name: Login to Docker Hub
+
+      - name: Login to Docker Hub
         uses: docker/login-action@master
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
 
       - name: Convert repository name to lowercase
         id: convert
         run: |
-          IMAGE_NAME_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
-          echo "IMAGE_NAME_LOWERCASE=$IMAGE_NAME_LOWERCASE" >> $GITHUB_ENV
+          IMAGE_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          REPO_NAME=$(echo $GITHUB_REPOSITORY | cut -d'/' -f2)
+          echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
+
+      - name: Delete old Docker images
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          curl -X DELETE \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/users/${{github.repository_owner}}/packages/container/${{env.REPO_NAME}}
 
       - name: Build and push multi-architecture images
         id: push
@@ -50,11 +101,19 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{env.REGISTRY}}/${{env.IMAGE_NAME_LOWERCASE}}:latest
+            ${{env.REGISTRY}}/${{env.IMAGE_NAME}}:latest
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@main
         with:
-          subject-name: ${{env.REGISTRY}}/${{env.IMAGE_NAME_LOWERCASE}}
+          subject-name: ${{env.REGISTRY}}/${{env.IMAGE_NAME}}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
+
+      - name: Delete old workflow run
+        uses: Mattraks/delete-workflow-runs@main
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 0
+          keep_minimum_runs: 0
