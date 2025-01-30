@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 
 from bot import bot, bot_photo, group, sakura_b, LOGGER, ranks, _open
 from bot.func_helper.emby import emby
-from bot.func_helper.utils import convert_to_beijing_time, convert_s, cache, get_users, tem_deluser
+from bot.func_helper.utils import convert_to_UTC_time, convert_s, cache, get_users, tem_deluser
 from bot.sql_helper import Session
 from bot.sql_helper.sql_emby import sql_get_emby, sql_update_embys, Emby, sql_update_emby
 from bot.func_helper.fix_bottons import plays_list_button
@@ -121,7 +121,7 @@ class Uplaysinfo:
             elif e.lv == 'c':
                 # print(e.tg)
                 try:
-                    ac_date = convert_to_beijing_time(user["LastActivityDate"])
+                    ac_date = convert_to_UTC_time(user["LastActivityDate"])
                 except KeyError:
                     ac_date = "None"
                 finally:
@@ -137,7 +137,7 @@ class Uplaysinfo:
                             LOGGER.info(f"【活跃检测】- 删除账户失败 {user['Name']} #id{e.tg}")
             elif e.lv == 'b':
                 try:
-                    ac_date = convert_to_beijing_time(user["LastActivityDate"])
+                    ac_date = convert_to_UTC_time(user["LastActivityDate"])
                     # print(e.name, ac_date, now)
                     if ac_date + timedelta(days=14) < now:
                         if await emby.emby_change_policy(id=user["Id"], method=True):

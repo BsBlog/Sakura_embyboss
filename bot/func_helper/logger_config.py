@@ -8,9 +8,9 @@ import datetime
 import pytz
 from loguru import logger
 
-# 转换为亚洲上海时区
-shanghai_tz = pytz.timezone("Asia/Shanghai")
-Now = datetime.datetime.now(shanghai_tz)
+# 转换为协调世界时
+UTC_tz = pytz.timezone("UTC")
+Now = datetime.datetime.now(UTC_tz)
 log_filename = f"log/log_{Now.strftime('%Y%m%d')}.txt"
 log_format = "{time:YYYY-MM-DD HH:mm:ss.SSS ZZ} | {name} | {level} | {message}"
 # 更新日志配置中的时间格式，确保记录的时间是东八区的时间

@@ -174,7 +174,7 @@ class RanksDraw:
 
     def save(self,
              save_path=os.path.join('log', 'img',
-                                    datetime.now(pytz.timezone("Asia/Shanghai")).strftime("%Y-%m-%d.jpg"))):
+                                    datetime.now(pytz.timezone("UTC")).strftime("%Y-%m-%d.jpg"))):
         if not os.path.exists('log/img'): os.makedirs('log/img')
         if self.bg.mode in ("RGBA", "P"): self.bg = self.bg.convert("RGB")
         self.bg.save(save_path)

@@ -194,13 +194,13 @@ def convert_runtime(RunTimeTicks: int):
     return f"{hours} {minutes} 分钟"
 
 
-def convert_to_beijing_time(original_date):
+def convert_to_UTC_time(original_date):
     original_date = original_date.split(".")[0].replace('T', ' ')
     dt = datetime.strptime(original_date, "%Y-%m-%d %H:%M:%S") + timedelta(hours=8)
-    # 使用pytz.timezone函数获取北京时区对象
-    beijing_tz = pytz.timezone("Asia/Shanghai")
+    # 使用pytz.timezone函数获取协调世界时对象
+    UTC_tz = pytz.timezone("UTC")
     # 使用beijing_tz.localize函数将dt对象转换为有时区的对象
-    dt = beijing_tz.localize(dt)
+    dt = UTC_tz.localize(dt)
     return dt
 
 
