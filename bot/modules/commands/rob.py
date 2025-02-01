@@ -10,9 +10,9 @@ from bot import bot, prefixes
 from bot.func_helper.msg_utils import deleteMessage, editMessage
 from bot.sql_helper.sql_emby import sql_get_emby, sql_update_emby, Emby
 
-# COMMISSION_FEE = 50     # 打劫佣金
-# MAX_COMMISSION_FEE = sys.maxsize  # 最大打劫钱
-ROB_TIME = 10  # 打劫持续时间
+# COMMISSION_FEE = 50     # 对决佣金
+# MAX_COMMISSION_FEE = sys.maxsize  # 最大对决钱
+ROB_TIME = 10  # 对决持续时间
 rob_games = {}
 # 添加全局锁字典
 rob_locks = {}
@@ -263,7 +263,7 @@ async def surrender(call, game_id):
     # 投降
     game = rob_games.get(game_id)
     if game is None:
-        await call.answer("这个打劫已经无效。", show_alert=True)
+        await call.answer("这个对决已经无效。", show_alert=True)
         return
 
     if call.from_user.id == int(call.data.split("_")[4]):
@@ -283,7 +283,7 @@ async def fighting(call, game_id):
     # 战斗
     game = rob_games.get(game_id)
     if game is None:
-        await call.answer("这个打劫已经无效。", show_alert=True)
+        await call.answer("这个对决已经无效。", show_alert=True)
         return
 
     if call.from_user.id == int(call.data.split("_")[4]):
@@ -305,12 +305,12 @@ async def fighting(call, game_id):
                     success_msg = await bot.send_message(call.message.chat.id, msg, reply_to_message_id=call.message.id)
                     asyncio.create_task(deleteMessage(success_msg, 180))
                     change_emby_amount(call.from_user.id, target_user.iv + COMMISSION_FEE)
-                    # 给打劫者私发消息
+                    # 给对决者私发消息
                     await bot.send_message(
                         user.tg,
                         f"乱世的盗贼抢劫失败损失了 {COMMISSION_FEE} Coin，剩余 {sql_get_emby(user.tg).iv} Coin！",
                         reply_to_message_id=call.message.id)
-                    # 给被打劫者私发消息
+                    # 给被对决者私发消息
                     await bot.send_message(
                         target_user.tg,
                         f"你打赢了乱世的盗贼赢得了 {COMMISSION_FEE} Coin佣金，剩余 {sql_get_emby(target_user.tg).iv} Coin！",
@@ -356,8 +356,8 @@ async def handle_watch_rewards(rob_game):
     BONUS_CHANCE = 25  # 25% 几率得分
     PENALTY_AMOUNT = 5  # 扣分数量
     BONUS_MIN_AMOUNT = 1  # 最小得分数量
-    BONUS_MAX_AMOUNT = 10  # 最大得分数量
-    LUCKY_AMOUNT = 6666  # 幸运大奖金额
+    BONUS_MAX_AMOUNT = 5  # 最大得分数量
+    LUCKY_AMOUNT = 10  # 幸运大奖金额
 
     watch_list = rob_game['watch_list']
     total_rewards = 0  # 跟踪总奖励的游戏币数
@@ -426,7 +426,7 @@ async def handle_rob_callback(client, call):
                 return
 
             if game_id not in rob_games:
-                await call.answer("这个打劫已经无效。", show_alert=True)
+                await call.answer("这个对决已经无效。", show_alert=True)
                 return
 
             if parts[1] == 'watch':
@@ -468,7 +468,7 @@ async def rob_user(_, msg):
         return
 
     if msg.from_user.id == msg.reply_to_message.from_user.id:
-        asyncio.create_task(delete_msg_with_error(msg, "不能打劫自己哦"))
+        asyncio.create_task(delete_msg_with_error(msg, "目标不能相同"))
         return
 
     for item in rob_games.values():
@@ -476,9 +476,9 @@ async def rob_user(_, msg):
             asyncio.create_task(delete_msg_with_error(msg, '乱世的盗贼外出了，请稍后再雇佣!'))
             return
 
-    if target_user.iv <= 50:
-        asyncio.create_task(delete_msg_with_error(msg, '对方是个穷鬼， 无法打劫！'))
-        return
+    # if target_user.iv <= 50:
+    #     asyncio.create_task(delete_msg_with_error(msg, '对方是个穷鬼， 无法对决！'))
+    #     return
 
     if user.iv < COMMISSION_FEE:
         asyncio.create_task(delete_msg_with_error(msg, '您的Coin不足以支付委托费用'))
@@ -489,7 +489,7 @@ async def rob_user(_, msg):
     target_with_link = await get_fullname_with_link(target_user.tg)
     message = await bot.send_message(
         msg.chat.id,
-        f"接受 { user_with_link } 的委托\n委托费 {COMMISSION_FEE} 打劫 {target_with_link}",
+        f"接受 { user_with_link } 的委托\n委托费 {COMMISSION_FEE} 对决 {target_with_link}",
         reply_to_message_id=msg.id
     )
     asyncio.create_task(deleteMessage(message, 30))
