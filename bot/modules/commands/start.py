@@ -48,9 +48,15 @@ async def count_info(_, msg):
 @bot.on_message(filters.command('start', prefixes) & filters.private)
 async def p_start(_, msg):
     if not await user_in_group_filter(_, msg):
+        # return await asyncio.gather(deleteMessage(msg),
+        #                             sendMessage(msg,
+        #                                         '💢 拜托啦！请先点击下面加入我们的群组和频道，然后再 /start 一下好吗？\n\n'
+        #                                         '⁉️ ps：如果您已在群组中且收到此消息，请联系管理员解除您的权限限制，因为被限制用户无法使用本bot。',
+        #                                         buttons=judge_group_ikb))
         return await asyncio.gather(deleteMessage(msg),
                                     sendMessage(msg,
-                                                '💢 拜托啦！请先点击下面加入我们的群组和频道，然后再 /start 一下好吗？\n\n'
+                                                '💢 您似乎还没有加入频道或者群组\n'
+                                                '  如果您找不到群组，那么请您先加入频道，再通过频道加入群组\n\n'
                                                 '⁉️ ps：如果您已在群组中且收到此消息，请联系管理员解除您的权限限制，因为被限制用户无法使用本bot。',
                                                 buttons=judge_group_ikb))
     try:
