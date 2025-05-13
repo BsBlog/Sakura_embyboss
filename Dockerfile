@@ -42,7 +42,7 @@ WORKDIR ${WORKDIR}
 COPY --from=requirements_builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=requirements_builder /usr/local/bin /usr/local/bin
 
-RUN git clone https://github.com/berry8838/Sakura_embyboss .
+RUN git clone https://github.com/BsBlog/Sakura_embyboss .
 
 ENTRYPOINT [ "python3" ]
 CMD [ "main.py" ]
