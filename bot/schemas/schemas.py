@@ -147,7 +147,7 @@ class Config(BaseModel):
     emby_url: str
     emby_block: Optional[List[str]] = []
     emby_line: str
-    special_emby_line: str
+    special_emby_line: Optional[str] = None
     extra_emby_libs: Optional[List[str]] = []
     db_host: str
     db_user: str
@@ -172,8 +172,6 @@ class Config(BaseModel):
     kk_gift_days: int = 30
     # 是否狙杀皮套人
     fuxx_pitao: bool = True
-    # 白名单用户专属的emby线路
-    emby_whitelist_line: Optional[str] = None
     # 被拦截的user-agent模式列表
     blocked_clients: Optional[List[str]] = None
     # 是否在检测到可疑客户端时终止会话
