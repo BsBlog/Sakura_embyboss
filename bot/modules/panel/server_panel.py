@@ -35,10 +35,12 @@ async def server(_, call):
         server_info = ''.join([item['server'] for item in sever if item['id'] == j])
 
     pwd = '空' if not data.pwd else data.pwd
-    if data.lv == "a":
-        line = f'{emby_line}\n\n{special_emby_line}'
-    elif data.lv == "b":
+    if data.lv == "b":
         line = f'{emby_line}'
+    elif data.lv == 'a':
+        line = f'{emby_line}'
+        if special_emby_line:
+            line += f'\n{special_emby_line}'
     else:
         line = ' - **无权查看**'
     try:
