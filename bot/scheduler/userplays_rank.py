@@ -2,7 +2,7 @@ import math
 import cn2an
 from datetime import datetime, timezone, timedelta
 
-from bot import bot, bot_photo, group, sakura_b, LOGGER, ranks, _open
+from bot import bot, bot_photo, group, sakura_b, LOGGER, ranks, _open 
 from bot.func_helper.emby import emby
 from bot.func_helper.utils import convert_to_UTC_time, convert_s, cache, get_users, tem_deluser
 from bot.sql_helper import Session
@@ -137,15 +137,17 @@ class Uplaysinfo:
                             LOGGER.info(f"【活跃检测】- 删除账户失败 {user['Name']} #id{e.tg}")
             elif e.lv == 'b':
                 try:
-                    ac_date = convert_to_UTC_time(user["LastActivityDate"])
+                    ac_date = convert_to_beijing_time(user["LastActivityDate"])
+                    from bot import config
+                    activity_check_days = config.activity_check_days
                     # print(e.name, ac_date, now)
-                    if ac_date + timedelta(days=14) < now:
+                    if ac_date + timedelta(days=activity_check_days) < now:
                         if await emby.emby_change_policy(id=user["Id"], method=True):
                             sql_update_emby(Emby.embyid == user["Id"], lv='c')
-                            msg += f"**🔋活跃检测** - [{user['Name']}](tg://user?id={e.tg})\n#id{e.tg} 14天未活跃，禁用\n\n"
-                            LOGGER.info(f"【活跃检测】- 禁用账户 {user['Name']} #id{e.tg}：14天未活跃")
+                            msg += f"**🔋活跃检测** - [{user['Name']}](tg://user?id={e.tg})\n#id{e.tg} {activity_check_days}天未活跃，禁用\n\n"
+                            LOGGER.info(f"【活跃检测】- 禁用账户 {user['Name']} #id{e.tg}：{activity_check_days}天未活跃")
                         else:
-                            msg += f"**🎂活跃检测** - [{user['Name']}](tg://user?id={e.tg})\n14天未活跃，禁用失败啦！检查emby连通性\n\n"
+                            msg += f"**🎂活跃检测** - [{user['Name']}](tg://user?id={e.tg})\n{activity_check_days}天未活跃，禁用失败啦！检查emby连通性\n\n"
                             LOGGER.info(f"【活跃检测】- 禁用账户 {user['Name']} #id{e.tg}：禁用失败啦！检查emby连通性")
                 except KeyError:
                     if await emby.emby_change_policy(id=user["Id"], method=True):
