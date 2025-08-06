@@ -18,7 +18,7 @@ async def cleanup_expired_tokens():
             expired_tokens = []
             
             for tg_id, timestamp in token_timestamps.items():
-                if current_time - timestamp > timedelta(seconds=120):
+                if current_time - timestamp > timedelta(minutes=10):
                     expired_tokens.append(tg_id)
             
             for tg_id in expired_tokens:
@@ -63,11 +63,13 @@ async def url_scheme_command(_, msg):
             
             token_timestamps[tg_id] = datetime.now()
             
-            await sendMessage(msg, 
-                             f"✅ **URL Scheme 生成成功！**\n\n"
-                             f"**您的链接：** `https://{url_scheme_url}?token={token}`\n\n"
-                             f"**注意：**请不要在公开场合分享此链接。链接将于120秒后失效\n",
-                             timer=120)
+            url_scheme_text = (
+                f"✅ **URL Scheme 生成成功！**\n\n"
+                f"**您的链接：** `https://{url_scheme_url}?token={token}`\n\n"
+                f"**注意：**请不要在公开场合分享此链接。链接将于10分钟后失效\n"
+            )
+
+            await sendMessage(msg, url_scheme_text, timer=600)
         except Exception as e:
             session.rollback()
             await sendMessage(msg, "❌ **错误：** 数据库更新失败，请稍后重试或联系管理员。", timer=60)
