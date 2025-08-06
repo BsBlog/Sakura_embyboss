@@ -66,7 +66,7 @@ async def url_scheme_command(_, msg):
             await sendMessage(msg, 
                              f"✅ **URL Scheme 生成成功！**\n\n"
                              f"**您的链接：** `https://{url_scheme_url}?token={token}`\n\n"
-                             f"**注意：**请不要在公开场合分享此链接。链接将于120秒后失效\n"
+                             f"**注意：**请不要在公开场合分享此链接。链接将于120秒后失效\n",
                              timer=120)
         except Exception as e:
             session.rollback()
