@@ -38,12 +38,23 @@ async def cleanup_expired_tokens():
             print(f"清理过期token时发生错误: {e}")
             await asyncio.sleep(30)
 
-asyncio.create_task(cleanup_expired_tokens())
+_cleanup_task = None
+
+def start_cleanup_task():
+    global _cleanup_task
+    if _cleanup_task is None or _cleanup_task.done():
+        try:
+            loop = asyncio.get_running_loop()
+            _cleanup_task = loop.create_task(cleanup_expired_tokens())
+        except RuntimeError:
+            pass
 
 
 @bot.on_message(filters.command('url_scheme', prefixes) & user_in_group_on_filter & filters.private)
 async def url_scheme_command(_, msg):
     await deleteMessage(msg)
+    
+    start_cleanup_task()
     
     tg_id = msg.from_user.id
     
