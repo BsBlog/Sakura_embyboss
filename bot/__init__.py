@@ -32,6 +32,7 @@ sakura_b = config.money
 ranks = config.ranks
 prefixes = ['/', '!', '.', '，', '。']
 schedall = config.schedall
+url_scheme_url = config.url_scheme_url
 # emby设置
 emby_api = config.emby_api
 emby_url = config.emby_url
@@ -75,7 +76,9 @@ user_p = [
     BotCommand("count", "[用户] 媒体库数量"),
     BotCommand("red", "[用户/禁言] 发红包"),
     BotCommand("srank", "[用户/禁言] 查看计分"),
-    BotCommand("rob", "[用户] 开始对决事件")]
+    BotCommand("rob", "[用户] 开始对决事件"),
+    BotCommand("url_scheme", "[用户] 通过URL Scheme导入Emby账户"),
+    ]
 
 # 取消 BotCommand("exchange", "[私聊] 使用注册码")
 admin_p = user_p + [
