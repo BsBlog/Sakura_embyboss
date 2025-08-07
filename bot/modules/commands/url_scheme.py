@@ -189,17 +189,15 @@ def init_http_server():
         http_server_thread = start_http_server()
 
 def start_url_scheme_server():
-    """在bot启动时启动URL Scheme HTTP服务器"""
+    """启动URL Scheme HTTP服务器"""
     try:
         init_http_server()
         LOGGER.info("URL Scheme HTTP server initialized successfully")
     except Exception as e:
         LOGGER.error(f"Failed to start URL Scheme HTTP server: {e}")
 
-@bot.on_start()
-async def on_bot_start():
-    """Bot启动时启动HTTP服务器"""
-    start_url_scheme_server()
+# 在模块加载时启动HTTP服务器
+start_url_scheme_server()
 
 async def cleanup_expired_tokens():
     while True:
