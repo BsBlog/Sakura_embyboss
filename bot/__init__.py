@@ -64,6 +64,7 @@ red_envelope = config.red_envelope
 moviepilot = config.moviepilot
 auto_update = config.auto_update
 api = config.api
+url_scheme_secret_key = config.url_scheme_secret_key.encode('utf-8')
 save_config()
 
 LOGGER.info("配置文件加载完毕")
