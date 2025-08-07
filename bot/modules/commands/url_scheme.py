@@ -2,9 +2,10 @@ import asyncio
 import json
 import base64
 import os
+import threading
 from datetime import datetime, timedelta
 from pyrogram import filters
-from aiohttp import web
+from flask import Flask, request, jsonify
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad, pad
 
@@ -59,18 +60,18 @@ def encrypt_data(data):
     except Exception as e:
         raise ValueError(f"Encryption failed: {str(e)}")
 
-async def handle_url_scheme_post(request):
+def handle_url_scheme_post():
     """
     处理URL Scheme的POST请求
     """
     try:
-        body = await request.json()
+        body = request.get_json()
         
-        if 'url_scheme_token' not in body or 'time' not in body:
-            return web.json_response({
+        if not body or 'url_scheme_token' not in body or 'time' not in body:
+            return jsonify({
                 "code": 400,
                 "message": "Missing required parameters: url_scheme_token and time"
-            }, status=400)
+            }), 400
         
         encrypted_token = body['url_scheme_token']
         timestamp = body['time']
@@ -80,64 +81,62 @@ async def handle_url_scheme_post(request):
             current_time = datetime.now()
             
             time_diff = abs((current_time - request_time).total_seconds())
-            if time_diff > 300:  # 5分钟
-                return web.json_response({
+            if time_diff > 300:
+                return jsonify({
                     "code": 400,
                     "message": "Timestamp is too old or in the future"
-                }, status=400)
+                }), 400
                 
         except (ValueError, TypeError):
-            return web.json_response({
+            return jsonify({
                 "code": 400,
                 "message": "Invalid timestamp format"
-            }, status=400)
+            }), 400
         
         try:
             decrypted_data = decrypt_data(encrypted_token)
             LOGGER.info(f"Successfully decrypted data: {decrypted_data}")
         except ValueError as e:
             LOGGER.error(f"Decryption failed: {str(e)}")
-            return web.json_response({
+            return jsonify({
                 "code": 400,
                 "message": "Invalid encrypted data"
-            }, status=400)
+            }), 400
         
         if not isinstance(decrypted_data, dict):
-            return web.json_response({
+            return jsonify({
                 "code": 400,
                 "message": "Decrypted data is not a valid JSON object"
-            }, status=400)
+            }), 400
         
         with Session() as session:
             try:
                 emby = session.query(Emby).filter(Emby.url_scheme_token == encrypted_token).first()
                 
                 if not emby:
-                    return web.json_response({
+                    return jsonify({
                         "code": 403,
                         "message": "Token not found or expired"
-                    }, status=403)
+                    }), 403
                 
                 LOGGER.info(f"URL scheme token used successfully for user {emby.tg}")
                 
-                # 准备要加密的数据
                 response_data = {
                     "name": emby.name,
                     "password": emby.pwd2
                 }
                 
-                # 加密响应数据
                 try:
                     encrypted_response = encrypt_data(response_data)
                     LOGGER.info("Response data encrypted successfully")
                 except ValueError as e:
                     LOGGER.error(f"Failed to encrypt response data: {e}")
-                    return web.json_response({
+                    return jsonify({
                         "code": 500,
                         "message": "Failed to encrypt response data"
-                    }, status=500)
+                    }), 500
                 
-                return web.json_response({
+                return jsonify({
                     "code": 200,
                     "message": "URL scheme processed successfully",
                     "encrypted_data": encrypted_response
@@ -146,50 +145,53 @@ async def handle_url_scheme_post(request):
             except Exception as e:
                 session.rollback()
                 LOGGER.error(f"Database error: {str(e)}")
-                return web.json_response({
+                return jsonify({
                     "code": 500,
                     "message": "Database error"
-                }, status=500)
+                }), 500
                 
-    except json.JSONDecodeError:
-        return web.json_response({
-            "code": 400,
-            "message": "Invalid JSON format"
-        }, status=400)
     except Exception as e:
         LOGGER.error(f"Unexpected error in URL scheme handler: {str(e)}")
-        return web.json_response({
+        return jsonify({
             "code": 500,
             "message": "Internal server error"
-        }, status=500)
+        }), 500
 
-async def start_http_server():
+flask_app = Flask(__name__)
+
+@flask_app.route('/url_scheme', methods=['POST'])
+def url_scheme_endpoint():
+    return handle_url_scheme_post()
+
+def start_http_server():
     """
     启动HTTP服务器
     """
-    app = web.Application()
-    app.router.add_post('/url_scheme', handle_url_scheme_post)
-    
-    runner = web.AppRunner(app)
-    await runner.setup()
-    
-    site = web.TCPSite(runner, '0.0.0.0', 5000)
-    await site.start()
-    
-    LOGGER.info("URL Scheme HTTP server started on port 5000")
-    return runner
+    try:
+        def run_flask():
+            flask_app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+        
+        server_thread = threading.Thread(target=run_flask, daemon=True)
+        server_thread.start()
+        
+        LOGGER.info("URL Scheme HTTP server started on port 5000")
+        return server_thread
+    except Exception as e:
+        LOGGER.error(f"Failed to start HTTP server: {e}")
+        return None
 
-http_server_runner = None
+http_server_thread = None
 
-async def init_http_server():
-    global http_server_runner
-    if http_server_runner is None:
-        http_server_runner = await start_http_server()
+def init_http_server():
+    """初始化HTTP服务器"""
+    global http_server_thread
+    if http_server_thread is None:
+        http_server_thread = start_http_server()
 
-async def start_url_scheme_server():
+def start_url_scheme_server():
     """在bot启动时启动URL Scheme HTTP服务器"""
     try:
-        await init_http_server()
+        init_http_server()
         LOGGER.info("URL Scheme HTTP server initialized successfully")
     except Exception as e:
         LOGGER.error(f"Failed to start URL Scheme HTTP server: {e}")
@@ -197,7 +199,7 @@ async def start_url_scheme_server():
 @bot.on_start()
 async def on_bot_start():
     """Bot启动时启动HTTP服务器"""
-    await start_url_scheme_server()
+    start_url_scheme_server()
 
 async def cleanup_expired_tokens():
     while True:
