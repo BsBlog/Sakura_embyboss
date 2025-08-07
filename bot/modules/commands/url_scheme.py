@@ -80,6 +80,7 @@ async def url_scheme_command(_, msg):
                 f"✅ **URL Scheme 生成成功！**\n\n"
                 f"**您的链接：** `https://{url_scheme_url}?token={token}`\n\n"
                 f"**注意：**请不要在公开场合分享此链接。链接将于10分钟后失效\n"
+                f"打开链接后，单击按钮即可导入至对应的播放器"
             )
 
             await sendMessage(msg, url_scheme_text, timer=600)
