@@ -1,4 +1,4 @@
-FROM python:3.13-slim-bookworm AS requirements_builder
+FROM python:3.13-slim-trixie AS requirements_builder
 
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     gcc \
@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN find . -type f -name "*.pyc" -delete
 
 
-FROM python:3.13-slim-bookworm
+FROM python:3.13-slim-trixie
 
 ENV TZ=UTC \
     DOCKER_MODE=1 \
