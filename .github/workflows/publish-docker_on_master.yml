@@ -163,7 +163,7 @@ jobs:
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: $(curl -s -H "Authorization: token ${{ github.token }}" -H "Accept: application/vnd.github+json" "https://api.github.com/users/${{ github.repository_owner }}/packages/container/${{ env.D_IMAGE_NAME }}/tags/latest" | jq -r '.digest')
-          push-to-registry: true
+          push: true
 
       - name: Delete old workflow run
         uses: Mattraks/delete-workflow-runs@main
