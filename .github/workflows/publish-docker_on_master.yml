@@ -5,60 +5,82 @@ on:
     branches: ['master']
 
   workflow_dispatch:
-    inputs:
-      linux_amd64:
-        description: 'Build for linux/amd64'
-        type: boolean
-        default: true
-      linux_arm64_v8:
-        description: 'Build for linux/arm64/v8'
-        type: boolean
-        default: true
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  push_to_registries:
-    name: Publish Latest Docker image
+  Prepare:
+    name: Prepare Environment
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
+      - name: Convert repository name to lowercase
+        id: convert
+        run: |
+          IMAGE_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          D_IMAGE_NAME=$(echo $IMAGE_NAME | cut -d'/' -f2)
+          echo "D_IMAGE_NAME=$D_IMAGE_NAME" >> $GITHUB_ENV
 
+      - name: Delete old Docker images
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          curl -X DELETE \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/users/${{github.repository_owner}}/packages/container/${{env.D_IMAGE_NAME}}
+
+  Build-and-Push:
+    name: Build and Push ${{ matrix.platform }}
+    needs: Prepare
+    runs-on: ${{ matrix.runner }}
+    permissions: write-all
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            tag_suffix: amd64
+          - platform: linux/386
+            runner: ubuntu-latest
+            tag_suffix: i386
+          - platform: linux/arm64/v8
+            runner: ubuntu-24.04-arm
+            tag_suffix: arm64
+          - platform: linux/arm/v7
+            runner: ubuntu-24.04-arm
+            tag_suffix: armv7
+          - platform: linux/arm/v6
+            runner: ubuntu-24.04-arm
+            tag_suffix: armv6
+          - platform: linux/ppc64le
+            runner: ubuntu-latest
+            tag_suffix: ppc64le
+          - platform: linux/riscv64
+            runner: ubuntu-latest
+            tag_suffix: riscv64
+          - platform: linux/s390x
+            runner: ubuntu-latest
+            tag_suffix: s390x
+    steps:
       - name: Free Disk-Space
-        run: df -h && sudo apt-get clean && docker system prune -a -f && sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc && df -h
+        run: |
+          df -h
+          sudo apt-get clean
+          docker system prune -a -f
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          df -h
 
       - name: Checkout
         uses: actions/checkout@main
 
-      - name: Setup platforms
-        id: set-platforms
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            PLATFORMS=""
-            if [ "${{ inputs.linux_amd64 }}" = "true" ]; then PLATFORMS+="linux/amd64,"; fi
-            if [ "${{ inputs.linux_arm64_v8 }}" = "true" ]; then PLATFORMS+="linux/arm64/v8,"; fi
-            PLATFORMS=$(echo $PLATFORMS | sed 's/,$//')
-          else
-            PLATFORMS="linux/amd64,linux/arm64/v8"
-          fi
-          
-          if [ -z "$PLATFORMS" ]; then
-            echo "No platforms selected, using default"
-            PLATFORMS="linux/amd64,linux/arm64/v8"
-          fi
-          
-          echo "Selected platforms: $PLATFORMS"
-          echo "PLATFORMS=$PLATFORMS" >> $GITHUB_ENV
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@master
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@master
-
-      - name: Login to Docker Hub
+        
+      - name: Login to Registry
         uses: docker/login-action@master
         with:
           registry: ${{ env.REGISTRY }}
@@ -70,34 +92,77 @@ jobs:
         run: |
           IMAGE_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
-          REPO_NAME=$(echo $GITHUB_REPOSITORY | cut -d'/' -f2)
-          echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
+          D_IMAGE_NAME=$(echo $IMAGE_NAME | cut -d'/' -f2)
+          echo "D_IMAGE_NAME=$D_IMAGE_NAME" >> $GITHUB_ENV
 
-      - name: Delete old Docker images
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          curl -X DELETE \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/users/${{github.repository_owner}}/packages/container/${{env.REPO_NAME}}
-
-      - name: Build and push multi-architecture images
+      - name: Build and push
         id: push
         uses: docker/build-push-action@master
         with:
           context: .
           file: ./Dockerfile
-          platforms: ${{ env.PLATFORMS }}
+          platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ${{env.REGISTRY}}/${{env.IMAGE_NAME}}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.tag_suffix }}
+
+  Merge-and-Push:
+    name: Merge architectures and push latest
+    needs: Build-and-Push
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+
+      - name: Convert repository name to lowercase
+        id: convert
+        run: |
+          IMAGE_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          D_IMAGE_NAME=$(echo $IMAGE_NAME | cut -d'/' -f2)
+          echo "D_IMAGE_NAME=$D_IMAGE_NAME" >> $GITHUB_ENV
+
+      - name: Login to Registry
+        uses: docker/login-action@master
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+
+      - name: Create and push multi-architecture manifest
+        run: |
+          docker manifest create ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:amd64 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:i386 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:armv7 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:armv6 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:ppc64le \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:riscv64 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:s390x
+
+          docker manifest push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Delete temporary images
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          TAGS=($(curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/users/${{ github.repository_owner }}/packages/container/${{ env.D_IMAGE_NAME }}/tags" | jq -r '.[] | select(.name != "latest") | .name'))
+
+          for TAG in "${TAGS[@]}"; do
+            echo "Deleting tag: $TAG"
+            curl -X DELETE \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/users/${{ github.repository_owner }}/packages/container/${{ env.D_IMAGE_NAME }}/versions/$(curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/users/${{ github.repository_owner }}/packages/container/${{ env.D_IMAGE_NAME }}/tags/$TAG" | jq -r '.version_id')"
+          done
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@main
         with:
-          subject-name: ${{env.REGISTRY}}/${{env.IMAGE_NAME}}
-          subject-digest: ${{ steps.push.outputs.digest }}
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: $(curl -s -H "Authorization: token ${{ github.token }}" -H "Accept: application/vnd.github+json" "https://api.github.com/users/${{ github.repository_owner }}/packages/container/${{ env.D_IMAGE_NAME }}/tags/latest" | jq -r '.digest')
           push-to-registry: true
 
       - name: Delete old workflow run
