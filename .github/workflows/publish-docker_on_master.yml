@@ -137,9 +137,13 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ github.token }}
 
-      - name: Create and push multi-architecture manifest
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@master
+
+      - name: Create and push manifest list
         run: |
-          docker manifest create ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:amd64 \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:i386 \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64 \
@@ -149,21 +153,18 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:riscv64 \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:s390x
 
-          docker manifest push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-
       - name: Delete temporary images
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          TAGS=($(curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/users/${{ github.repository_owner }}/packages/container/${{ env.D_IMAGE_NAME }}/tags" | jq -r '.[] | select(.name != "latest") | .name'))
-
-          for TAG in "${TAGS[@]}"; do
-            echo "Deleting tag: $TAG"
-            curl -X DELETE \
-              -H "Authorization: token $GITHUB_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/users/${{ github.repository_owner }}/packages/container/${{ env.D_IMAGE_NAME }}/versions/$(curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/users/${{ github.repository_owner }}/packages/container/${{ env.D_IMAGE_NAME }}/tags/$TAG" | jq -r '.version_id')"
-          done
+          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:amd64 || true
+          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:i386 || true
+          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64 || true
+          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:armv7 || true
+          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:armv6 || true
+          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:ppc64le || true
+          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:riscv64 || true
+          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:s390x || true
+          
+          echo "Temporary images deleted successfully"
 
       - name: Delete old workflow run
         uses: Mattraks/delete-workflow-runs@main
