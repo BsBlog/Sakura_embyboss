@@ -119,6 +119,7 @@ jobs:
     needs: Build-and-Push
     runs-on: ubuntu-latest
     permissions: write-all
+    if: always()
     steps:
       - name: Checkout
         uses: actions/checkout@main
@@ -142,22 +143,39 @@ jobs:
         uses: docker/setup-buildx-action@master
 
       - name: Create and push manifest list
-        id: create_manifest
         run: |
+          # Define all possible architecture tags from the matrix
           TAGS=("amd64" "i386" "arm64" "armv7" "armv6" "ppc64le" "riscv64" "s390x")
           
-          COMMAND="docker buildx imagetools create --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          # Initialize a variable to hold the list of images that were successfully built
+          SUCCESSFUL_IMAGES=""
           
-          {% for platform in needs.Build-and-Push.outputs.matrix.platform %}
-            if [[ "${{ needs.Build-and-Push.outputs.results[format('build-and-push-{0}', platform)] }}" == "success" ]]; then
-              TAG_SUFFIX="${{ needs.Build-and-Push.outputs.results[format('build-and-push-{0}-tag_suffix', platform)] }}"
-              COMMAND="$COMMAND ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-$TAG_SUFFIX"
+          # Check for the existence of each image on the registry
+          for tag in "${TAGS[@]}"; do
+            IMAGE_REF="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$tag"
+            
+            echo "Checking for image: $IMAGE_REF"
+            # The 'imagetools inspect' command returns a non-zero exit code if the image doesn't exist
+            if docker buildx imagetools inspect "$IMAGE_REF" > /dev/null 2>&1; then
+              echo "Image found. Adding to merge list."
+              SUCCESSFUL_IMAGES="$SUCCESSFUL_IMAGES $IMAGE_REF"
+            else
+              echo "Image not found for tag $tag. It may have failed to build."
             fi
-          {% endfor %}
+          done
           
-          echo "Run command: $COMMAND"
-          eval $COMMAND
-
+          # Only attempt to create the manifest if there are successful images to merge
+          if [ -n "$SUCCESSFUL_IMAGES" ]; then
+            echo "Merging the following images into the 'latest' tag: $SUCCESSFUL_IMAGES"
+            docker buildx imagetools create \
+              --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+              $SUCCESSFUL_IMAGES
+          else
+            echo "No successful images found to merge. Skipping manifest creation."
+            # Exit successfully to prevent the workflow from being marked as a failure
+            exit 0
+          fi
+          
       - name: Delete Temporary Images
         id: cleanup
         env:
@@ -186,7 +204,6 @@ jobs:
     name: Finalize Workflow
     needs: Merge-and-Push
     runs-on: ubuntu-latest
-    steps:
       - name: Delete old workflow runs
         uses: Mattraks/delete-workflow-runs@main
         with:
