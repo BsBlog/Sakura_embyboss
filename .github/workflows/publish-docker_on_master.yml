@@ -144,18 +144,11 @@ jobs:
 
       - name: Create and push manifest list
         run: |
-          # Define all possible architecture tags from the matrix
           TAGS=("amd64" "i386" "arm64" "armv7" "armv6" "ppc64le" "riscv64" "s390x")
-          
-          # Initialize a variable to hold the list of images that were successfully built
           SUCCESSFUL_IMAGES=""
-          
-          # Check for the existence of each image on the registry
           for tag in "${TAGS[@]}"; do
             IMAGE_REF="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$tag"
-            
             echo "Checking for image: $IMAGE_REF"
-            # The 'imagetools inspect' command returns a non-zero exit code if the image doesn't exist
             if docker buildx imagetools inspect "$IMAGE_REF" > /dev/null 2>&1; then
               echo "Image found. Adding to merge list."
               SUCCESSFUL_IMAGES="$SUCCESSFUL_IMAGES $IMAGE_REF"
@@ -164,7 +157,8 @@ jobs:
             fi
           done
           
-          # Only attempt to create the manifest if there are successful images to merge
+          echo "SUCCESSFUL_IMAGES=$SUCCESSFUL_IMAGES" >> $GITHUB_ENV
+          
           if [ -n "$SUCCESSFUL_IMAGES" ]; then
             echo "Merging the following images into the 'latest' tag: $SUCCESSFUL_IMAGES"
             docker buildx imagetools create \
@@ -172,38 +166,62 @@ jobs:
               $SUCCESSFUL_IMAGES
           else
             echo "No successful images found to merge. Skipping manifest creation."
-            # Exit successfully to prevent the workflow from being marked as a failure
             exit 0
           fi
           
       - name: Delete Temporary Images
-        id: cleanup
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          VERSION_IDS=$(curl -s -X GET \
-            -H "Authorization: token ${{ env.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/users/${{github.repository_owner}}/packages/container/${{env.D_IMAGE_NAME}}/versions" | \
-            jq -r '.[] | select(.metadata.container.tags[] | startswith("${{ github.sha }}")) | .id')
-
-          if [ -n "$VERSION_IDS" ]; then
-            echo "$VERSION_IDS"
-            for version_id in $VERSION_IDS; do
-              echo "$version_id..."
-              curl -X DELETE \
-                -H "Authorization: token ${{ env.GITHUB_TOKEN }}" \
-                -H "Accept: application/vnd.github.v3+json" \
-                "https://api.github.com/users/${{github.repository_owner}}/packages/container/${{env.D_IMAGE_NAME}}/versions/$version_id"
+          if [ -n "$SUCCESSFUL_IMAGES" ]; then
+            echo "Deleting temporary images: $SUCCESSFUL_IMAGES"
+            
+            for image in $SUCCESSFUL_IMAGES; do
+              echo "Processing image: $image"
+              
+              tag=$(echo "$image" | cut -d':' -f2)
+              echo "Extracting tag: $tag from image: $image"
+              
+              echo "Deleting tag: $tag via API..."
+              
+              VERSION_RESPONSE=$(curl -s \
+                -H "Authorization: token ${{ github.token }}" \
+                -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/users/${{ github.repository_owner }}/packages/container/${{ env.D_IMAGE_NAME }}/versions")
+              
+              if [ $? -eq 0 ]; then
+                VERSION_ID=$(echo "$VERSION_RESPONSE" | jq -r ".[] | select(.metadata.container.tags[] | contains(\"$tag\")) | .id")
+                
+                if [ "$VERSION_ID" != "null" ] && [ -n "$VERSION_ID" ]; then
+                  echo "Found version ID: $VERSION_ID for tag: $tag"
+                  
+                  DELETE_RESPONSE=$(curl -s -X DELETE \
+                    -H "Authorization: token ${{ github.token }}" \
+                    -H "Accept: application/vnd.github+json" \
+                    "https://api.github.com/users/${{ github.repository_owner }}/packages/container/${{ env.D_IMAGE_NAME }}/versions/$VERSION_ID")
+                  
+                  if [ $? -eq 0 ]; then
+                    echo "Successfully deleted temporary image: $image (tag: $tag)"
+                  else
+                    echo "Failed to delete image: $image (tag: $tag). Response: $DELETE_RESPONSE"
+                  fi
+                else
+                  echo "Could not find version ID for tag: $tag"
+                fi
+              else
+                echo "Failed to get versions for image: $image. Response: $VERSION_RESPONSE"
+              fi
             done
+            
+            echo "Temporary images cleanup completed"
           else
-            echo "No temporary images to delete."
+            echo "No temporary images to delete (SUCCESSFUL_IMAGES is empty)"
           fi
+
 
   Finalize:
     name: Finalize Workflow
     needs: Merge-and-Push
     runs-on: ubuntu-latest
+    if: always()
     steps: 
       - name: Delete old workflow runs
         uses: Mattraks/delete-workflow-runs@main
