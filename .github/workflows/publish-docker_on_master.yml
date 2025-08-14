@@ -204,6 +204,7 @@ jobs:
     name: Finalize Workflow
     needs: Merge-and-Push
     runs-on: ubuntu-latest
+    steps: 
       - name: Delete old workflow runs
         uses: Mattraks/delete-workflow-runs@main
         with:
