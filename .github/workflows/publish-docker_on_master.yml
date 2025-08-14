@@ -39,6 +39,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     permissions: write-all
     strategy:
+      fail-fast: false
       matrix:
         include:
           - platform: linux/amd64
@@ -141,17 +142,21 @@ jobs:
         uses: docker/setup-buildx-action@master
 
       - name: Create and push manifest list
+        id: create_manifest
         run: |
-          docker buildx imagetools create \
-            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:amd64 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:i386 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:armv7 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:armv6 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:ppc64le \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:riscv64 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:s390x
+          TAGS=("amd64" "i386" "arm64" "armv7" "armv6" "ppc64le" "riscv64" "s390x")
+          
+          COMMAND="docker buildx imagetools create --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          
+          {% for platform in needs.Build-and-Push.outputs.matrix.platform %}
+            if [[ "${{ needs.Build-and-Push.outputs.results[format('build-and-push-{0}', platform)] }}" == "success" ]]; then
+              TAG_SUFFIX="${{ needs.Build-and-Push.outputs.results[format('build-and-push-{0}-tag_suffix', platform)] }}"
+              COMMAND="$COMMAND ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-$TAG_SUFFIX"
+            fi
+          {% endfor %}
+          
+          echo "Run command: $COMMAND"
+          eval $COMMAND
 
       - name: Delete Temporary Images
         id: cleanup
