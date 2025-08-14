@@ -153,20 +153,36 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:riscv64 \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:s390x
 
-      - name: Delete temporary images
+      - name: Delete Temporary Images
+        id: cleanup
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:amd64 || true
-          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:i386 || true
-          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64 || true
-          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:armv7 || true
-          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:armv6 || true
-          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:ppc64le || true
-          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:riscv64 || true
-          docker buildx imagetools rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:s390x || true
-          
-          echo "Temporary images deleted successfully"
+          VERSION_IDS=$(curl -s -X GET \
+            -H "Authorization: token ${{ env.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/users/${{github.repository_owner}}/packages/container/${{env.D_IMAGE_NAME}}/versions" | \
+            jq -r '.[] | select(.metadata.container.tags[] | startswith("${{ github.sha }}")) | .id')
 
-      - name: Delete old workflow run
+          if [ -n "$VERSION_IDS" ]; then
+            echo "$VERSION_IDS"
+            for version_id in $VERSION_IDS; do
+              echo "$version_id..."
+              curl -X DELETE \
+                -H "Authorization: token ${{ env.GITHUB_TOKEN }}" \
+                -H "Accept: application/vnd.github.v3+json" \
+                "https://api.github.com/users/${{github.repository_owner}}/packages/container/${{env.D_IMAGE_NAME}}/versions/$version_id"
+            done
+          else
+            echo "No temporary images to delete."
+          fi
+
+  Finalize:
+    name: Finalize Workflow
+    needs: Merge-and-Push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old workflow runs
         uses: Mattraks/delete-workflow-runs@main
         with:
           token: ${{ github.token }}
