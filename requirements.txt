@@ -1,12 +1,12 @@
 ﻿PyMySQL
 requests
-Pyrogram
+kurigram
 pyromod
 TgCrypto
-uvloop
+
 asyncio
 APScheduler
-pykeyboard
+pykeyboard-kurigram
 humanize
 cacheout
 SQLAlchemy
