@@ -45,27 +45,9 @@ jobs:
           - platform: linux/amd64
             runner: ubuntu-latest
             tag_suffix: amd64
-          - platform: linux/386
-            runner: ubuntu-latest
-            tag_suffix: i386
           - platform: linux/arm64/v8
             runner: ubuntu-24.04-arm
             tag_suffix: arm64
-          - platform: linux/arm/v7
-            runner: ubuntu-24.04-arm
-            tag_suffix: armv7
-          - platform: linux/arm/v6
-            runner: ubuntu-24.04-arm
-            tag_suffix: armv6
-          - platform: linux/ppc64le
-            runner: ubuntu-latest
-            tag_suffix: ppc64le
-          - platform: linux/riscv64
-            runner: ubuntu-latest
-            tag_suffix: riscv64
-          - platform: linux/s390x
-            runner: ubuntu-latest
-            tag_suffix: s390x
     steps:
       - name: Free Disk-Space
         run: |
