@@ -131,7 +131,7 @@ if len(extra_emby_libs) > 0:
     owner_p += [BotCommand("extraembylibs_blockall", "一键关闭所有用户的额外媒体库 [owner]"),
                 BotCommand("extraembylibs_unblockall", "一键开启所有用户的额外媒体库 [owner]")]
 
-with contextlib.suppress(ImportError):
+# with contextlib.suppress(ImportError):
     # import uvloop
 
     # uvloop.install()
