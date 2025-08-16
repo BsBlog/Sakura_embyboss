@@ -80,6 +80,9 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@master
+
+      - name: Set up Docker QEMU
+        uses: docker/setup-qemu-action@master
         
       - name: Login to Registry
         uses: docker/login-action@master
@@ -211,12 +214,12 @@ jobs:
             echo "No temporary images to delete (SUCCESSFUL_IMAGES is empty)"
           fi
 
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@main
-        with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push: true
+      # - name: Generate artifact attestation
+      #   uses: actions/attest-build-provenance@main
+      #   with:
+      #     subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      #     subject-digest: ${{ steps.push.outputs.digest }}
+      #     push: true
 
   Finalize:
     name: Finalize Workflow
