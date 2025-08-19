@@ -162,7 +162,7 @@ async def user_cha_ip(_, msg, name = None):
             if ip not in ip_list:
                 ip_count += 1
                 ip_list.append(ip)
-                ip_details += f'{ip_count}: `{ip}`| [{ip}](https://ping0.cc/ip/{ip}) \n'
+                ip_details += f'{ip_count}: `{ip}`| [{ip}](https://ipinfo.io/{ip}) \n'
 
             # 统计设备并拼接详情
             if device + client not in device_list:

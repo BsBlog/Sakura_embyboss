@@ -831,7 +831,7 @@ async def my_devices(_, call):
             if ip not in ip_list:
                 ip_count += 1
                 ip_list.append(ip)
-                ip_details += f'{ip_count}: `{ip}`\n'
+                ip_details += f'{ip_count}: `{ip}`| [{ip}](https://ipinfo.io/{ip}) \n'
             # 统计设备并拼接详情
             if device + client not in device_list:
                 device_count += 1
