@@ -33,6 +33,7 @@ ranks = config.ranks
 prefixes = ['/', '!', '.', '，', '。']
 schedall = config.schedall
 url_scheme_url = config.url_scheme_url
+url_scheme_secret_key = config.url_scheme_secret_key
 # emby设置
 emby_api = config.emby_api
 emby_url = config.emby_url
