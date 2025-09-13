@@ -48,7 +48,7 @@ async def members_info(tg=None, name=None):
             ex = ' __无需保号，放心食用__'
         else:
             ex = data.ex or '无账户信息'
-        return name, lv, ex, us, embyid, pwd2
+        return name, lv, ex, iv, embyid, pwd2
 
 
 async def open_check():
