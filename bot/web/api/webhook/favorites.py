@@ -27,6 +27,7 @@ async def handle_favorite_webhook(request: Request):
     try:
         # 检查Content-Type
         content_type = request.headers.get("content-type", "").lower()
+        LOGGER.info(content_type)
         
         if "application/json" in content_type:
             # 处理JSON格式
@@ -70,6 +71,7 @@ async def handle_favorite_webhook(request: Request):
             "event": webhook_data.get("Event", ""),
             "date": webhook_data.get("Date", "")
         }
+        LOGGER.info(1)
         # 保存到数据库
         save_result = sql_add_favorites(
             embyid=embyid,
@@ -78,6 +80,7 @@ async def handle_favorite_webhook(request: Request):
             item_name=item_name,
             is_favorite=is_favorite
         )
+        LOGGER.info(2)
         
         if save_result:
             action = "收藏" if is_favorite else "取消收藏"
@@ -89,7 +92,8 @@ async def handle_favorite_webhook(request: Request):
                 user = session.query(Emby).filter(
                     Emby.name == embyname
                 ).first()
-                
+                LOGGER.info(3)
+                LOGGER.info(user)
                 if user and user.tg:
                     # 发送Telegram通知
                     await send_favorite_notification(
