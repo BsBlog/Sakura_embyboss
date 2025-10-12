@@ -42,7 +42,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
 
 WORKDIR ${WORKDIR}
 
-COPY --from=requirements_builder /usr/local/lib/python3.13t/site-packages /usr/local/lib/python3.13t/site-packages
+COPY --from=requirements_builder /usr/local/lib/python3.14t/site-packages /usr/local/lib/python3.14t/site-packages
 COPY --from=requirements_builder /usr/local/bin /usr/local/bin
 
 RUN git clone https://github.com/BsBlog/Sakura_embyboss .
