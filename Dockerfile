@@ -23,8 +23,9 @@ RUN find . -type f -name "*.pyc" -delete
 
 FROM base_python
 
-ENV PYTHON_GIL=0 \
-    TZ=UTC \
+# PYTHON_GIL=0
+
+ENV TZ=UTC \
     DOCKER_MODE=1 \
     PYTHONUNBUFFERED=1 \
     WORKDIR=/app
@@ -49,5 +50,6 @@ COPY --from=requirements_builder /usr/local/bin /usr/local/bin
 
 RUN git clone https://github.com/BsBlog/Sakura_embyboss .
 
-ENTRYPOINT ["python3","-X","gil=0"]
+# ENTRYPOINT ["python3","-X","gil=0"]
+ENTRYPOINT ["python3"]
 CMD [ "main.py" ]
