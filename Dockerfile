@@ -22,7 +22,7 @@ RUN find . -type f -name "*.pyc" -delete
 
 FROM base_python
 
-ENV PYTHON_GIL=0
+ENV PYTHON_GIL=0 \
     TZ=UTC \
     DOCKER_MODE=1 \
     PYTHONUNBUFFERED=1 \
