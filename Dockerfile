@@ -1,5 +1,4 @@
-# FROM ghcr.io/bsblog/python-nogil:latest AS base_python
-FROM python:3.13.8-slim AS base_python
+FROM ghcr.io/bsblog/python-nogil:latest AS base_python
 
 FROM base_python AS requirements_builder
 
@@ -23,9 +22,8 @@ RUN find . -type f -name "*.pyc" -delete
 
 FROM base_python
 
-# PYTHON_GIL=0
-
-ENV TZ=UTC \
+ENV PYTHON_GIL=0
+    TZ=UTC \
     DOCKER_MODE=1 \
     PYTHONUNBUFFERED=1 \
     WORKDIR=/app
@@ -44,12 +42,10 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
 
 WORKDIR ${WORKDIR}
 
-# COPY --from=requirements_builder /usr/local/lib/python3.14t/site-packages /usr/local/lib/python3.14t/site-packages
-COPY --from=requirements_builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
+COPY --from=requirements_builder /usr/local/lib/python3.14t/site-packages /usr/local/lib/python3.14t/site-packages
 COPY --from=requirements_builder /usr/local/bin /usr/local/bin
 
 RUN git clone https://github.com/BsBlog/Sakura_embyboss .
 
-# ENTRYPOINT ["python3","-X","gil=0"]
-ENTRYPOINT ["python3"]
+ENTRYPOINT ["python3","-X","gil=0"]
 CMD [ "main.py" ]
