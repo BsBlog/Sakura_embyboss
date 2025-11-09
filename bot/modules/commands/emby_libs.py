@@ -21,19 +21,19 @@ async def embylibs_blockall(_, msg):
     successcount = 0
     start = time.perf_counter()
     text = ''
-    all_libs = await emby.get_emby_libs()
     for i in rst:
-        success, rep = await emby.user(emby_id=i.embyid)
-        if success:
+        if i.embyid:
             allcount += 1
-            currentblock = ['播放列表'] + all_libs
-            # 去除相同的元素
-            currentblock = list(set(currentblock))
-            re = await emby.emby_block(emby_id=i.embyid, stats=0, block=currentblock)
-            if re is True:
-                successcount += 1
-                text += f'已关闭了 [{i.name}](tg://user?id={i.tg}) 的媒体库权限\n'
-            else:
+            try:
+                # 使用封装的禁用所有媒体库方法
+                re = await emby.disable_all_folders_for_user(i.embyid)
+                if re is True:
+                    successcount += 1
+                    text += f'已关闭了 [{i.name}](tg://user?id={i.tg}) 的媒体库权限\n'
+                else:
+                    text += f'🌧️ 关闭失败 [{i.name}](tg://user?id={i.tg}) 的媒体库权限\n'
+            except Exception as e:
+                LOGGER.error(f"关闭媒体库权限失败: {i.name} - {str(e)}")
                 text += f'🌧️ 关闭失败 [{i.name}](tg://user?id={i.tg}) 的媒体库权限\n'
     # 防止触发 MESSAGE_TOO_LONG 异常
     n = 1000
@@ -65,16 +65,18 @@ async def embylibs_unblockall(_, msg):
     start = time.perf_counter()
     text = ''
     for i in rst:
-        success, rep = await emby.user(emby_id=i.embyid)
-        if success:
+        if i.embyid:
             allcount += 1
-            currentblock = ['播放列表']
-            # 去除相同的元素
-            re = await emby.emby_block(emby_id=i.embyid, stats=0, block=currentblock)
-            if re is True:
-                successcount += 1
-                text += f'已开启了 [{i.name}](tg://user?id={i.tg}) 的媒体库权限\n'
-            else:
+            try:
+                # 使用封装的启用所有媒体库方法
+                re = await emby.enable_all_folders_for_user(i.embyid)
+                if re is True:
+                    successcount += 1
+                    text += f'已开启了 [{i.name}](tg://user?id={i.tg}) 的媒体库权限\n'
+                else:
+                    text += f'🌧️ 开启失败 [{i.name}](tg://user?id={i.tg}) 的媒体库权限\n'
+            except Exception as e:
+                LOGGER.error(f"开启媒体库权限失败: {i.name} - {str(e)}")
                 text += f'🌧️ 开启失败 [{i.name}](tg://user?id={i.tg}) 的媒体库权限\n'
     # 防止触发 MESSAGE_TOO_LONG 异常
     n = 1000
@@ -107,25 +109,19 @@ async def extraembylibs_blockall(_, msg):
     start = time.perf_counter()
     text = ''
     for i in rst:
-        success, rep = await emby.user(emby_id=i.embyid)
-        if success:
+        if i.embyid:
             allcount += 1
             try:
-                currentblock = list(set(rep["Policy"]["BlockedMediaFolders"] + ['播放列表']))
-            except KeyError:
-                currentblock = ['播放列表'] + extra_emby_libs
-            if not set(extra_emby_libs).issubset(set(currentblock)):
-                # 去除相同的元素
-                currentblock = list(set(currentblock + extra_emby_libs))
-                re = await emby.emby_block(emby_id=i.embyid, stats=0, block=currentblock)
+                # 使用封装的隐藏额外媒体库方法
+                re = await emby.hide_folders_by_names(i.embyid, extra_emby_libs)
                 if re is True:
                     successcount += 1
                     text += f'已关闭了 [{i.name}](tg://user?id={i.tg}) 的额外媒体库权限\n'
                 else:
                     text += f'🌧️ 关闭失败 [{i.name}](tg://user?id={i.tg}) 的额外媒体库权限\n'
-            else:
-                successcount += 1
-                text += f'已关闭了 [{i.name}](tg://user?id={i.tg}) 的额外媒体库权限\n'
+            except Exception as e:
+                LOGGER.error(f"关闭额外媒体库权限失败: {i.name} - {str(e)}")
+                text += f'🌧️ 关闭失败 [{i.name}](tg://user?id={i.tg}) 的额外媒体库权限\n'
     # 防止触发 MESSAGE_TOO_LONG 异常
     n = 1000
     chunks = [text[i:i + n] for i in range(0, len(text), n)]
@@ -158,26 +154,19 @@ async def extraembylibs_unblockall(_, msg):
     start = time.perf_counter()
     text = ''
     for i in rst:
-        success, rep = await emby.user(emby_id=i.embyid)
-        if success:
+        if i.embyid:
             allcount += 1
             try:
-                currentblock = list(set(rep["Policy"]["BlockedMediaFolders"] + ['播放列表']))
-                # 保留不同的元素
-                currentblock = [x for x in currentblock if x not in extra_emby_libs] + [x for x in extra_emby_libs if
-                                                                                        x not in currentblock]
-            except KeyError:
-                currentblock = ['播放列表']
-            if not set(extra_emby_libs).issubset(set(currentblock)):
-                re = await emby.emby_block(emby_id=i.embyid, stats=0, block=currentblock)
+                # 使用封装的显示额外媒体库方法
+                re = await emby.show_folders_by_names(i.embyid, extra_emby_libs)
                 if re is True:
                     successcount += 1
                     text += f'已开启了 [{i.name}](tg://user?id={i.tg}) 的额外媒体库权限\n'
                 else:
                     text += f'🌧️ 开启失败 [{i.name}](tg://user?id={i.tg}) 的额外媒体库权限\n'
-            else:
-                successcount += 1
-                text += f'已开启了 [{i.name}](tg://user?id={i.tg}) 的额外媒体库权限\n'
+            except Exception as e:
+                LOGGER.error(f"开启额外媒体库权限失败: {i.name} - {str(e)}")
+                text += f'🌧️ 开启失败 [{i.name}](tg://user?id={i.tg}) 的额外媒体库权限\n'
     # 防止触发 MESSAGE_TOO_LONG 异常
     n = 1000
     chunks = [text[i:i + n] for i in range(0, len(text), n)]
