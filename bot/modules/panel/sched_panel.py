@@ -91,9 +91,17 @@ async def sched_change_policy(_, call):
 
 @bot.on_message(filters.command('check_ex', prefixes) & admins_on_filter)
 async def check_ex_admin(_, msg):
-    send = await msg.reply("🍥 正在运行 【到期检测】。。。")
-    await check_expired()
-    await asyncio.gather(msg.delete(), send.edit("✅ 【到期检测结束】"))
+    await deleteMessage(msg)
+    confirm = False
+    try:
+        confirm = msg.command[1]
+    except:
+        pass
+    if confirm == 'true':
+        send = await msg.reply("🍥 正在运行 【到期检测】。。。")
+        await asyncio.gather(check_expired(), send.edit("✅ 【到期检测结束】"))
+    else:
+        await msg.reply("🔔 请输入 `/check_ex true` 确认运行")
 
 
 # bot数据库手动备份
@@ -115,9 +123,16 @@ async def week_r_ranks(_, msg):
 @bot.on_message(filters.command('low_activity', prefixes) & admins_on_filter)
 async def run_low_ac(_, msg):
     await deleteMessage(msg)
-    send = await msg.reply(f"⭕ 不活跃检测运行ing···")
-    await asyncio.gather(check_low_activity(), send.delete())
-
+    confirm = False
+    try:
+        confirm = msg.command[1]
+    except:
+        pass
+    if confirm == 'true':
+        send = await msg.reply("⭕ 不活跃检测运行ing···")
+        await asyncio.gather(check_low_activity(), send.delete())
+    else:
+        await msg.reply("🔔 请输入 `/low_activity true` 确认运行")
 
 @bot.on_message(filters.command('uranks', prefixes) & admins_on_filter)
 async def shou_dong_uplayrank(_, msg):
