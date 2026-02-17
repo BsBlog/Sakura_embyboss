@@ -3,7 +3,7 @@ requests
 kurigram
 pyromod
 TgCrypto
-
+uvloop
 asyncio
 APScheduler
 pykeyboard-kurigram
@@ -21,3 +21,4 @@ starlette
 uvicorn
 python-multipart
 aiohttp
+cryptography
