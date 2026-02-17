@@ -1,7 +1,11 @@
-# 🌸 Sakura_embyboss 初学练习版（重构中）
+# 🌸 Sakura_embyboss 自由线程版
 
 <p align="center">
-<img src="image/bot2.png" alt="bot"><br>
+<img width="715" height="496" alt="image" src="https://github.com/user-attachments/assets/34db3850-c6a3-4b19-a4b5-d4a515fb30e3" />
+<br>
+<a>图为斐波那契多线程测试在 Python 3.13 和 Python 3.14 的常规、即时编译、自由线程模式下的对比</a>
+<br>
+<br>
 <a href="https://github.com/berry8838/Sakura_embyboss/stargazers"><img src="https://img.shields.io/github/stars/berry8838/Sakura_embyboss" alt="stars"></a> 
 <a href="https://github.com/berry8838/Sakura_embyboss/forks"><img src="https://img.shields.io/github/forks/berry8838/Sakura_embyboss" alt="forks"></a> 
 <a href="https://github.com/berry8838/Sakura_embyboss/issues"><img src="https://img.shields.io/github/issues/berry8838/Sakura_embyboss" alt="issue"></a>  
@@ -14,10 +18,11 @@
 </p>
 <br>
 
-## 📜 项目说明（重构中，暂停更新）
+## 📜 项目说明
 
 - **用Telegram管理Emby用户**（开服） 安装使用 👉 [项目文档](https://berry8838.github.io/Sakura_embyboss)
-- **推荐使用 Debian 11操作系统，AMD处理器架构。目前ARM也支持（如有问题请反馈issue）**
+- **推荐使用 Debian 操作系统，AMD处理器架构。目前ARM也支持（如有问题请反馈issue）**
+- **目前，自由线程仍处于测试阶段，请做好数据备份工作，出现问题请提交Issue**
 - 解决不了大的技术问题（因为菜菜），如需要，请自行fork修改，~~如果能提点有意思的pr更好啦~~
 - 反馈请尽量 issue，看到会处理
 
