@@ -8,12 +8,12 @@
 <br>
 <a href="https://github.com/berry8838/Sakura_embyboss/stargazers"><img src="https://img.shields.io/github/stars/berry8838/Sakura_embyboss" alt="stars"></a> 
 <a href="https://github.com/berry8838/Sakura_embyboss/forks"><img src="https://img.shields.io/github/forks/berry8838/Sakura_embyboss" alt="forks"></a> 
-<a href="https://github.com/berry8838/Sakura_embyboss/issues"><img src="https://img.shields.io/github/issues/berry8838/Sakura_embyboss" alt="issue"></a>  
-<a href="https://github.com/berry8838/Sakura_embyboss/blob/master/LICENSE"><img src="https://img.shields.io/github/license/berry8838/Sakura_embyboss" alt="license"></a> 
-<a href="https://hub.docker.com/r/jingwei520/sakura_embyboss" ><img src="https://img.shields.io/docker/v/jingwei520/sakura_embyboss/latest?logo=docker" alt="docker"></a>
-<a href="https://hub.docker.com/r/jingwei520/sakura_embyboss/tags" ><img src="https://img.shields.io/badge/platform-amd64%20arm64-pink" alt="plat"></a>
-<a href="https://github.com/berry8838/Sakura_embyboss/actions/workflows/publish-docker_on_master.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/berry8838/Sakura_embyboss/publish-docker_on_master.yml?branch=master" alt="Build status" />
+<a href="https://github.com/BsBlog/Sakura_embyboss/issues"><img src="https://img.shields.io/github/issues/BsBlog/Sakura_embyboss" alt="issue"></a>  
+<a href="https://github.com/BsBlog/Sakura_embyboss/blob/master/LICENSE"><img src="https://img.shields.io/github/license/BsBlog/Sakura_embyboss" alt="license"></a> 
+<a href="https://github.com/orgs/BsBlog/packages/container/package/sakura_embyboss" ><img src="https://img.shields.io/docker/v/jingwei520/sakura_embyboss/latest?logo=docker" alt="docker"></a>
+<a href="https://github.com/orgs/BsBlog/packages/container/package/sakura_embyboss" ><img src="https://img.shields.io/badge/platform-amd64%20arm64-pink" alt="plat"></a>
+<a href="https://github.com/BsBlog/Sakura_embyboss/actions/workflows/publish-docker_on_master.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/BsBlog/Sakura_embyboss/publish-docker_on_master.yml?branch=master" alt="Build status" />
 </a>
 </p>
 <br>
