@@ -45,16 +45,24 @@ class RedEnvelope:
 
 
 async def create_reds(
-    money, members, first_name, sender_id, flag=None, private=None, private_text=None
+    money,
+    members,
+    first_name,
+    sender_id,
+    envelope_type="random",
+    private=None,
+    private_text=None,
 ):
     red_id = await pwd_create(5)
     envelope = RedEnvelope(
-        money=money, members=members, sender_id=sender_id, sender_name=first_name
+        money=money,
+        members=members,
+        sender_id=sender_id,
+        sender_name=first_name,
+        envelope_type=envelope_type,
     )
 
-    if flag:
-        envelope.type = "equal"
-    elif private:
+    if private:
         envelope.type = "private"
         envelope.target_user = private
     if private_text is None:
@@ -92,6 +100,16 @@ async def send_red_envelope(_, msg):
 
     # 处理专享红包
     if msg.reply_to_message and red_envelope.allow_private:
+        target_from_user = msg.reply_to_message.from_user
+        target_sender_chat = msg.reply_to_message.sender_chat
+
+        # 不允许对机器人或频道发送专属红包
+        if (target_from_user and target_from_user.is_bot) or target_sender_chat:
+            return await asyncio.gather(
+                msg.delete(),
+                sendMessage(msg, "🚫 专属红包不能发给机器人或频道!", timer=60),
+            )
+
         try:
             money = int(msg.command[1])
             private_text = (
@@ -104,7 +122,7 @@ async def send_red_envelope(_, msg):
                 msg.delete(),
                 sendMessage(
                     msg,
-                    "**🧧 专享红包：\n\n请回复某人 [数额][空格][个性化留言（可选）]**",
+                    "**🧧 专享红包：\n\n请回复某人 [数额] [祝福语（可选）]**",
                     timer=60,
                 ),
             )
@@ -123,7 +141,7 @@ async def send_red_envelope(_, msg):
                     msg.delete(),
                     sendMessage(
                         msg,
-                        "**🧧 专享红包：\n\n请回复某人 [数额][空格][个性化留言（可选）]**",
+                        "**🧧 专享红包：\n\n请回复某人 [数额] [祝福语（可选）]**",
                         timer=60,
                     ),
                 )
@@ -153,13 +171,14 @@ async def send_red_envelope(_, msg):
             money, 1, user_pic, f"{msg.reply_to_message.from_user.first_name} 专享"
         )
 
+        sign_name = f'{msg.sender_chat.title}' if msg.sender_chat else f'[{msg.from_user.first_name}](tg://user?id={msg.from_user.id})'
         await asyncio.gather(
             sendPhoto(msg, photo=cover, buttons=ikb),
             reply.edit(
                 f"🔥 [{msg.reply_to_message.from_user.first_name}]"
                 f"(tg://user?id={msg.reply_to_message.from_user.id})\n"
-                f"您收到一个来自 [{first_name}](tg://user?id={msg.from_user.id}) 的专属红包"
-            ),
+                f"您收到一个来自 {sign_name} 的专属红包"
+            )
         )
         return
 
@@ -173,7 +192,7 @@ async def send_red_envelope(_, msg):
             sendMessage(
                 msg,
                 f"**🧧 发红包：\n\n/red [总{sakura_b}数] [份数] [mode] [祝福语（可选）]**\n\n"
-                f"[mode]留空为拼手气, 任意值为均分\n[祝福语]不传则随机默认祝福语\n专享红包请回复 + {sakura_b}",
+                f"[mode]填 1 为拼手气, 其他值为均分\n[祝福语]不传则随机默认祝福语\n专享红包请回复 + {sakura_b}",
                 timer=60,
             ),
         )
@@ -184,7 +203,8 @@ async def send_red_envelope(_, msg):
         return
 
     # 创建并发送红包
-    flag = msg.command[3] if len(msg.command) > 3 else (1 if money == members else None)
+    mode_param = msg.command[3] if len(msg.command) > 3 else None
+    envelope_type = "random" if (mode_param is None or str(mode_param) == "1") else "equal"
     private_text = msg.command[4] if len(msg.command) > 4 else None
     reply, _ = await asyncio.gather(msg.reply("正在准备红包，稍等"), msg.delete())
 
@@ -193,7 +213,7 @@ async def send_red_envelope(_, msg):
         members=members,
         first_name=first_name,
         sender_id=msg.from_user.id if not msg.sender_chat else msg.sender_chat.id,
-        flag=flag,
+        envelope_type=envelope_type,
         private_text=private_text
     )
 
