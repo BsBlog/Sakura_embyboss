@@ -148,8 +148,6 @@ class Config(BaseModel):
     open: Open
     admins: Optional[List[int]] = []
     money: str
-    url_scheme_url: str
-    url_scheme_secret_key: str
     emby_api: str
     emby_url: str
     emby_block: Optional[List[str]] = []

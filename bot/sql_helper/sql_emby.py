@@ -25,7 +25,6 @@ class Emby(Base):
     us = Column(Integer, default=0)
     iv = Column(Integer, default=0)
     ch = Column(DateTime, nullable=True)
-    url_scheme_token = Column(String(255), nullable=True)
 
 
 Emby.__table__.create(bind=engine, checkfirst=True)
