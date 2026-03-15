@@ -10,6 +10,7 @@ pykeyboard-kurigram
 humanize
 cacheout
 SQLAlchemy
+alembic
 pytz
 Pillow
 pydantic
