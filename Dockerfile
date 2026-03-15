@@ -45,7 +45,12 @@ WORKDIR ${WORKDIR}
 COPY --from=requirements_builder /usr/local/lib/python3.14t/site-packages /usr/local/lib/python3.14t/site-packages
 COPY --from=requirements_builder /usr/local/bin /usr/local/bin
 
-RUN git clone https://github.com/BsBlog/Sakura_embyboss .
+# 复制本地项目代码
+COPY . .
 
+# 保持镜像体积精简
+RUN rm -rf ./image
+
+# 设置启动命令
 ENTRYPOINT ["python3","-X","gil=0"]
 CMD [ "main.py" ]

@@ -1,8 +1,8 @@
 """
 基本的sql操作
 """
-from bot.sql_helper import Base, Session, engine
-from sqlalchemy import Column, BigInteger, String, DateTime, Integer, Boolean, case
+from bot.sql_helper import Base, Session
+from sqlalchemy import Column, BigInteger, String, DateTime, Integer, case
 from sqlalchemy import func
 from sqlalchemy import or_
 from bot import LOGGER
@@ -25,10 +25,6 @@ class Emby(Base):
     us = Column(Integer, default=0)
     iv = Column(Integer, default=0)
     ch = Column(DateTime, nullable=True)
-
-
-Emby.__table__.create(bind=engine, checkfirst=True)
-
 
 def sql_add_emby(tg: int):
     """
