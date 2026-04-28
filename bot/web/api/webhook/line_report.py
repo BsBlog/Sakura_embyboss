@@ -17,11 +17,35 @@ from bot.func_helper.emby import emby
 import json
 import re
 from typing import Any, Dict, List, Optional, Tuple
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import parse_qs, urlparse
 
 router = APIRouter()
 
+# 违规冷却缓存: {user_id: last_violation_time}
+_violation_cooldown: Dict[str, datetime] = {}
+
+
+def is_in_cooldown(user_id: str) -> bool:
+    """检查用户是否在冷却期内（冷却期内的重复上报直接忽略）"""
+    cooldown_seconds = getattr(config, "line_filter_cooldown_seconds", 60)
+    last_time = _violation_cooldown.get(user_id)
+    if last_time and datetime.now() - last_time < timedelta(seconds=cooldown_seconds):
+        return True
+    return False
+
+
+def update_cooldown(user_id: str) -> None:
+    """更新用户的冷却时间戳，并清理过期条目"""
+    cooldown_seconds = getattr(config, "line_filter_cooldown_seconds", 60)
+    _violation_cooldown[user_id] = datetime.now()
+    # 顺手清理已过期的条目，防止内存无限增长
+    expired = [
+        uid for uid, t in _violation_cooldown.items()
+        if datetime.now() - t >= timedelta(seconds=cooldown_seconds)
+    ]
+    for uid in expired:
+        del _violation_cooldown[uid]
 
 # ==================== 线路权限控制 ====================
 
@@ -349,9 +373,6 @@ async def log_line_violation(
     user_name: str = None,
     session_id: str = None,
     client_name: str = None,
-    device_name: str = None,
-    remote_endpoint: str = None,
-    server_address: str = None,
     tg_id: int = None,
     user_lv: str = None,
     action_taken: str = None,
@@ -369,7 +390,6 @@ async def log_line_violation(
             f"🏷️ 用户等级: {lv_display}\n"
             f"━━━━━━━━━━━━━━━\n"
             f"📺 客户端: {client_name or 'Unknown'}\n"
-            f"💻 设备: {device_name or 'Unknown'}\n"
             f"🔑 会话ID: {session_id or 'Unknown'}\n"
             f"━━━━━━━━━━━━━━━\n"
             f"🚨 处理措施: {action_taken or '无'}\n"
@@ -380,7 +400,9 @@ async def log_line_violation(
 
         if hasattr(config, "group") and config.group:
             try:
-                await bot.send_message(chat_id=config.group[0], text=log_message)
+                out = await bot.send_message(chat_id=config.group[0], text=log_message)
+                if tg_id:
+                    await out.forward(tg_id)
             except Exception as e:
                 LOGGER.error(f"发送线路违规通知失败: {str(e)}")
 
@@ -393,9 +415,6 @@ async def handle_line_violation(
     user_name: str,
     session_id: str,
     client_name: str,
-    device_name: str,
-    remote_endpoint: str,
-    server_address: str,
     user_details: Emby,
 ) -> dict:
     """
@@ -437,9 +456,6 @@ async def handle_line_violation(
         user_name=user_name,
         session_id=session_id,
         client_name=client_name,
-        device_name=device_name,
-        remote_endpoint=remote_endpoint,
-        server_address=server_address,
         tg_id=user_details.tg if user_details else None,
         user_lv=user_details.lv if user_details else None,
         action_taken=action_taken,
@@ -450,60 +466,6 @@ async def handle_line_violation(
         "block_success": block_success,
         "action_taken": action_taken,
     }
-
-
-async def check_line_permission(
-    emby_id: str,
-    user_name: str,
-    session_id: str,
-    client_name: str,
-    device_name: str,
-    remote_endpoint: str,
-    server_address: str,
-) -> Tuple[bool, Optional[dict]]:
-    """
-    检查用户是否有权限使用当前线路
-    :return: (是否允许, 违规处理结果或None)
-    """
-    whitelist_line = getattr(config, "emby_whitelist_line", None)
-    if not whitelist_line:
-        LOGGER.debug("未配置白名单线路，跳过线路权限检查")
-        return True, None
-
-    if not server_address:
-        LOGGER.debug("无法获取服务器地址，跳过线路权限检查")
-        return True, None
-
-    user_details = sql_get_emby(emby_id)
-    using_whitelist_line = is_whitelist_line(server_address)
-    is_whitelist_user = is_user_whitelisted(user_details)
-
-    LOGGER.debug(
-        f"线路权限检查: user={user_name}, emby_id={emby_id}, "
-        f"server={server_address}, using_whitelist={using_whitelist_line}, "
-        f"is_whitelist_user={is_whitelist_user}"
-    )
-
-    if is_whitelist_user:
-        return True, None
-
-    if using_whitelist_line and not is_whitelist_user:
-        LOGGER.warning(
-            f"线路权限违规: 普通用户 {user_name}({emby_id}) 尝试使用白名单线路 {server_address}"
-        )
-        result = await handle_line_violation(
-            emby_id=emby_id,
-            user_name=user_name,
-            session_id=session_id,
-            client_name=client_name,
-            device_name=device_name,
-            remote_endpoint=remote_endpoint,
-            server_address=server_address,
-            user_details=user_details,
-        )
-        return False, result
-
-    return True, None
 
 
 @router.get("/line_report")
@@ -581,6 +543,21 @@ async def line_report(
     using_whitelist = is_whitelist_line(server_address)
 
     if using_whitelist:
+        # 冷却期内的重复上报直接忽略（播放器不响应终止会话时会持续上报）
+        if is_in_cooldown(resolved_user_id):
+            cooldown_seconds = getattr(config, "line_filter_cooldown_seconds", 60)
+            LOGGER.debug(
+                f"线路违规冷却中，忽略重复上报: 用户 {resolved_user_id} "
+                f"(冷却 {cooldown_seconds}s 内)"
+            )
+            return {
+                "status": "cooldown",
+                "message": "Violation already handled, in cooldown",
+                "userId": resolved_user_id,
+            }
+
+        update_cooldown(resolved_user_id)
+
         LOGGER.warning(
             f"线路权限违规(nginx): 用户 {resolved_user_id} 通过 {server_address} 使用白名单线路"
         )
@@ -600,8 +577,6 @@ async def line_report(
 
         session_id = normalize_identifier(session.get("Id")) if session else ""
         client_name = normalize_identifier(session.get("Client")) if session else ""
-        device_name = normalize_identifier(session.get("DeviceName")) if session else deviceId
-        remote_endpoint = normalize_identifier(session.get("RemoteEndPoint")) if session else ""
         user_name = normalize_identifier(session.get("UserName")) if session else ""
 
         result = await handle_line_violation(
@@ -609,9 +584,6 @@ async def line_report(
             user_name=user_name or (user_details.name if user_details else ""),
             session_id=session_id,
             client_name=client_name,
-            device_name=device_name,
-            remote_endpoint=remote_endpoint,
-            server_address=server_address,
             user_details=user_details,
         )
 
