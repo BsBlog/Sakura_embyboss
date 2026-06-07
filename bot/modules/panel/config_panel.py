@@ -10,7 +10,7 @@ from bot import bot, prefixes, bot_photo, Now, LOGGER, config, save_config, _ope
 from pyrogram import filters
 
 from bot.func_helper.filters import admins_on_filter
-from bot.func_helper.fix_bottons import config_preparation, close_it_ikb, back_config_p_ikb, back_set_ikb, mp_config_ikb
+from bot.func_helper.fix_bottons import config_preparation, close_it_ikb, back_config_p_ikb, back_set_ikb, mp_config_ikb, client_filter_panel
 from bot.func_helper.msg_utils import deleteMessage, editMessage, callAnswer, callListen, sendPhoto, sendFile
 from bot.func_helper.scheduler import scheduler
 from bot.scheduler.sync_mp_download import sync_download_tasks
@@ -456,7 +456,7 @@ async def set_tz_params(_, call):
 
 
 # 设置 emby 线路
-@bot.on_callback_query(filters.regex('set_line') & admins_on_filter)
+@bot.on_callback_query(filters.regex('^set_line$') & admins_on_filter)
 async def set_emby_line(_, call):
     await callAnswer(call, '📌 设置emby线路')
     send = await editMessage(call,
@@ -479,29 +479,28 @@ async def set_emby_line(_, call):
                           buttons=back_config_p_ikb)
         LOGGER.info(f"【admin】：{call.from_user.id} - 更新emby线路为{config.emby_line}设置完成")
 
-
-@bot.on_callback_query(filters.regex('set_special_line') & admins_on_filter)
-async def set_special_emby_line(_, call):
-    await callAnswer(call, '📌 设置emby特殊线路')
+@bot.on_callback_query(filters.regex('^set_whitelist_line$') & admins_on_filter)
+async def set_whitelist_emby_line(_, call):
+    await callAnswer(call, '🌟 设置白名单线路')
     send = await editMessage(call,
-                             "💘【设置线路】\n\n对我发送向emby用户展示的特殊emby地址吧\n取消点击 /cancel")
+                             "🌟【设置白名单线路】\n\n对我发送白名单用户专属的emby地址\n取消点击 /cancel")
     if send is False:
         return
 
-    txt = await callListen(call, 120, buttons=back_set_ikb('set_special_line'))
+    txt = await callListen(call, 120, buttons=back_set_ikb('set_whitelist_line'))
     if txt is False:
         return
 
     elif txt.text == '/cancel':
         await txt.delete()
-        await editMessage(call, '__您已经取消输入__ **会话已结束！**', buttons=back_set_ikb('set_special_line'))
+        await editMessage(call, '__您已经取消输入__ **会话已结束！**', buttons=back_set_ikb('set_whitelist_line'))
     else:
         await txt.delete()
-        config.special_emby_line = txt.text
+        config.emby_whitelist_line = txt.text
         save_config()
-        await editMessage(call, f"**【网址样式】:** \n\n{config.special_emby_line}\n\n设置完成！done！",
+        await editMessage(call, f"**【白名单线路】:** \n\n{config.emby_whitelist_line}\n\n设置完成！done！",
                           buttons=back_config_p_ikb)
-        LOGGER.info(f"【admin】：{call.from_user.id} - 更新emby特殊线路为{config.special_emby_line}设置完成")
+        LOGGER.info(f"【admin】：{call.from_user.id} - 更新白名单线路为{config.emby_whitelist_line}设置完成")
 
 
 # 设置需要显示/隐藏的库
@@ -828,3 +827,53 @@ async def set_activity_check_days(_, call):
                               f"🕰️ 【活跃检测天数】\n\n{days}天 **Done!**",
                               buttons=back_config_p_ikb)
             LOGGER.info(f"【admin】：{call.from_user.id} - 更新活跃检测天数为{days}天完成")
+
+
+@bot.on_callback_query(filters.regex('^set_client_filter$') & admins_on_filter)
+async def set_client_filter_panel(_, call):
+    """进入客户端过滤设置子面板"""
+    await callAnswer(call, '📡 客户端过滤')
+    status = '✅ 已开启' if config.client_filter_enabled else '❌ 未开启'
+    mode = '黑名单模式' if config.client_filter_mode == 'blacklist' else '白名单模式'
+    text = (
+        f"📡 **客户端过滤设置**\n\n"
+        f"当前状态: **{status}**\n"
+        f"过滤模式: **{mode}**\n\n"
+        f"• 黑名单模式: 匹配拦截列表的客户端将被拦截\n"
+        f"• 白名单模式: 未匹配允许列表的客户端将被拦截"
+    )
+    await editMessage(call, text, buttons=client_filter_panel())
+
+
+@bot.on_callback_query(filters.regex('^toggle_client_filter$') & admins_on_filter)
+async def toggle_client_filter(_, call):
+    """切换客户端过滤开关"""
+    config.client_filter_enabled = not config.client_filter_enabled
+    if config.client_filter_enabled:
+        message = '📡 您已开启 客户端过滤功能'
+        log_message = f"【admin】：管理员 {call.from_user.first_name} 已开启 客户端过滤功能"
+    else:
+        message = '📡 您已关闭 客户端过滤功能'
+        log_message = f"【admin】：管理员 {call.from_user.first_name} 已关闭 客户端过滤功能"
+    await callAnswer(call, message, True)
+    save_config()
+    await set_client_filter_panel(_, call)
+    LOGGER.info(log_message)
+
+
+@bot.on_callback_query(filters.regex('^set_client_filter_mode$') & admins_on_filter)
+async def set_client_filter_mode(_, call):
+    """切换客户端过滤模式"""
+    print(f"当前过滤模式: {config.client_filter_mode}")
+    if config.client_filter_mode == 'blacklist':
+        config.client_filter_mode = 'whitelist'
+        message = '📡 已切换到 白名单模式'
+        log_message = f"【admin】：管理员 {call.from_user.first_name} 已切换客户端过滤模式为 白名单"
+    else:
+        config.client_filter_mode = 'blacklist'
+        message = '📡 已切换到 黑名单模式'
+        log_message = f"【admin】：管理员 {call.from_user.first_name} 已切换客户端过滤模式为 黑名单"
+    await callAnswer(call, message, True)
+    save_config()
+    await set_client_filter_panel(_, call)
+    LOGGER.info(log_message)
