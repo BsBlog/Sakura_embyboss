@@ -582,7 +582,7 @@ async def set_auto_update(_, call):
         # 简化逻辑，只设置一次
         auto_update.status = not auto_update.status
         if auto_update.status:
-            message = '👮🏻‍♂️您已开启 auto_update自动更新bot代码\n\n运行时间：12:30UTC+0800'
+            message = '👮🏻‍♂️您已开启 auto_update自动更新bot代码\n\n运行时间：12:30 UTC+0'
             LOGGER.info(f"【admin】：管理员 {call.from_user.first_name} 已启用 auto_update自动更新bot代码")
         else:
             message = '👮🏻‍♂️ 您已关闭 auto_update自动更新bot代码，如您需要更换仓库，请于配置文件中git_repo填写'

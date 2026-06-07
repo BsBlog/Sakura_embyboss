@@ -106,7 +106,7 @@ class Uplaysinfo:
 
     @staticmethod
     async def check_low_activity():
-        now = datetime.now(timezone(timedelta(hours=8)))
+        now = datetime.now(timezone(timedelta(hours=0)))
         success, users = await emby.users()
         if not success:
             return await bot.send_message(chat_id=group[0], text='⭕ 调用emby api失败')

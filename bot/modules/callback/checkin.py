@@ -12,7 +12,7 @@ from bot.sql_helper.sql_emby import sql_get_emby, sql_update_emby, Emby
 
 @bot.on_callback_query(filters.regex('checkin') & user_in_group_on_filter)
 async def user_in_checkin(_, call):
-    now = datetime.now(timezone(timedelta(hours=8)))
+    now = datetime.now(timezone(timedelta(hours=0)))
     today = now.strftime("%Y-%m-%d")
     if _open.checkin:
         e = sql_get_emby(call.from_user.id)

@@ -58,5 +58,5 @@ async def server(_, call):
            f'{line}\n\n' \
            f'{server_info}' \
            f'· 🎬 在线 | **{online}** 人\n\n' \
-           f'**· 🌏 [{(datetime.now(timezone(timedelta(hours=8)))).strftime("%Y-%m-%d %H:%M:%S")}]**'
+           f'**· 🌏 [{(datetime.now(timezone(timedelta(hours=0)))).strftime("%Y-%m-%d %H:%M:%S")}]**'
     await editMessage(call, text, buttons=keyboard)

@@ -949,7 +949,7 @@ class Embyservice(metaclass=Singleton):
         """
         try:
             if not end_date:
-                end_date = datetime.now(timezone(timedelta(hours=8)))
+                end_date = datetime.now(timezone(timedelta(hours=0)))
             
             start_time = (end_date - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
             end_time = end_date.strftime('%Y-%m-%d %H:%M:%S')
