@@ -11,3 +11,5 @@ from .syncs import sync_emby_group, sync_emby_unbound, bindall_id, reload_admins
 from .view_user import list_whitelist, whitelist_page, list_normaluser, normaluser_page
 from . import rob
 from .audit import audit_ip_command, audit_device_name_command, audit_client_name_command 
+from .audit import audit_ip_command, audit_device_name_command, audit_client_name_command 
+from .watching import watching_command
